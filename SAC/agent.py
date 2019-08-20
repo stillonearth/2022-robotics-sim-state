@@ -9,11 +9,11 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-3
+LR = 3e-4
 GAMMA = 0.99
 BATCH_SIZE = 256
 BUFFER_SIZE = int(1e6)
-ALPHA = 0.2
+ALPHA = 0.1
 TAU = 1e-3
 TARGET_UPDATE_INTERVAL = 1
 GRADIENT_STEPS = 1
@@ -55,8 +55,8 @@ class Agent():
     def value_v(self, states, alpha=ALPHA):
         actions, log_probs = self.sample_action(states)
 
-        q_target_1 = self.q_network_1(states, actions) 
-        q_target_2 = self.q_network_2(states, actions)
+        q_target_1 = self.q_network_1(states, actions.detach()) 
+        q_target_2 = self.q_network_2(states, actions.detach())
 
         return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
@@ -69,9 +69,6 @@ class Agent():
         self.writer.add_scalar(name, loss.detach().cpu().numpy())
 
     def learn(self):
-
-        if len(self.memory.memory) < BATCH_SIZE:
-            return
 
         for _ in range(GRADIENT_STEPS):
 
@@ -136,7 +133,7 @@ class Agent():
         (mean, stddev) = self.policy_network(state)
         sigma = torch.distributions.Normal(0, 1).sample()
         action = torch.tanh(mean + stddev * sigma)
-        log_prob = torch.distributions.Normal(mean, stddev).log_prob(mean + stddev*sigma) # - torch.log(1 - action.pow(2) + epsilon)
+        log_prob = torch.distributions.Normal(mean, stddev).log_prob(mean + stddev*sigma) - torch.log(1 - action.pow(2) + epsilon)
 
         return action, log_prob
 
