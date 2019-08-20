@@ -13,8 +13,8 @@ LR = 3e-3
 GAMMA = 0.99
 BATCH_SIZE = 256
 BUFFER_SIZE = int(1e6)
-ALPHA = 0.05 #0.01
-TAU = 0.005
+ALPHA = 0.2
+TAU = 1e-3
 TARGET_UPDATE_INTERVAL = 1
 GRADIENT_STEPS = 1
 
@@ -49,17 +49,16 @@ class Agent():
         self.step_counter = 0
         self.writer = SummaryWriter()
 
-    def value_target(self, states, next_states, rewards, dones, network, gamma=GAMMA):
-        return (rewards + gamma * (1 - dones) * network(next_states)).detach()
+    def value_q(self, states, next_states, rewards, dones, network, gamma=GAMMA):
+        return (rewards + gamma * (1 - dones) * network(next_states))
     
-    def q_target(self, states, alpha=ALPHA):
-        distribution = self.policy_network(states)
-        actions = distribution.sample()
-        
-        q_target_1 = self.q_network_1(states, actions) - alpha * distribution.log_prob(actions)
-        q_target_2 = self.q_network_2(states, actions) - alpha * distribution.log_prob(actions)
+    def value_v(self, states, alpha=ALPHA):
+        actions, log_probs = self.sample_action(states)
 
-        return torch.min(q_target_1, q_target_2).detach()
+        q_target_1 = self.q_network_1(states, actions) 
+        q_target_2 = self.q_network_2(states, actions)
+
+        return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
     def optimize_loss(self, loss, optimizer):
         optimizer.zero_grad()
@@ -71,46 +70,43 @@ class Agent():
 
     def learn(self):
 
+        if len(self.memory.memory) < BATCH_SIZE:
+            return
+
         for _ in range(GRADIENT_STEPS):
 
             states, actions, rewards, next_states, dones = self.memory.sample(self.device)
 
             # Calculate V and Q targets
-            vt = self.value_target(states, next_states, rewards, dones, self.value_network_target)
-            # vl = self.value_target(states, next_states, rewards, dones, self.value_network_local)
-
-            qt = self.q_target(states)
+            y_q = self.value_q(states, next_states, rewards, dones, self.value_network_target).detach()
+            # vl = self.value_q(states, next_states, rewards, dones, self.value_network_local)
+            y_v = self.value_v(states)
 
             # Update Q-functions
-            q_loss_1 = (self.q_network_1(states, actions) - vt).pow(2).mean()
-            q_loss_2 = (self.q_network_2(states, actions) - vt).pow(2).mean()
-
-            self.write_loss_to_log(q_loss_1, 'rewards/q_loss_1')
-            self.write_loss_to_log(q_loss_2, 'rewards/q_loss_2')
-
+            q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_1, self.q_optimizer_1)
+            q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_2, self.q_optimizer_2)
 
             # Update V-function
-            v_loss = (self.value_network_local(states)-qt).pow(2).mean()
-
-            self.write_loss_to_log(v_loss, 'rewards/v_loss')
+            v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
             self.optimize_loss(v_loss, self.value_optimizer)
 
             # Update Policy-function
-            p_action_distributions = self.policy_network(states)
-            p_actions = p_action_distributions.sample()
-            p_actions_log_probs = p_action_distributions.log_prob(p_actions)
+            p_actions, p_log_probs = self.sample_action(states)
             
-            p_loss = (self.q_network_1(states, p_actions) - ALPHA * p_actions_log_probs).mean()
-            self.write_loss_to_log(p_loss, 'rewards/p_loss')
+            p_loss = -(self.q_network_1(states, p_actions) - ALPHA * p_log_probs).mean()
+            torch.nn.utils.clip_grad_norm_(self.policy_network.parameters(), 1)
             self.optimize_loss(p_loss, self.policy_optimizer)
 
             # update Value network
             self.soft_update(self.value_network_local, self.value_network_target)
 
-    def sample_log_probs(self):
-        
+            # Write losses to tensorbord log
+            self.write_loss_to_log(q_loss_1, 'rewards/q_loss_1')
+            self.write_loss_to_log(q_loss_2, 'rewards/q_loss_2')
+            self.write_loss_to_log(p_loss, 'rewards/p_loss')
+            self.write_loss_to_log(v_loss, 'rewards/v_loss')
 
     def soft_update(self, local_model, target_model, tau=TAU):
         """Soft update model parameters.
@@ -136,16 +132,22 @@ class Agent():
             self.learn()
             self.step_counter = 0
 
+    def sample_action(self, state, epsilon=1e-6):
+        (mean, stddev) = self.policy_network(state)
+        sigma = torch.distributions.Normal(0, 1).sample()
+        action = torch.tanh(mean + stddev * sigma)
+        log_prob = torch.distributions.Normal(mean, stddev).log_prob(mean + stddev*sigma) # - torch.log(1 - action.pow(2) + epsilon)
+
+        return action, log_prob
+
     def act(self, state):
         state = torch.from_numpy(state).float().to(self.device)
         self.policy_network.eval()
         with torch.no_grad():
-            action_distribution = self.policy_network(state)
+            action, _ = self.policy_network(state)
         self.policy_network.train()
 
-        action = action_distribution.sample()
         return action.detach().cpu().numpy()
-
 
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
