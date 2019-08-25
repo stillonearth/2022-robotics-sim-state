@@ -1,8 +1,7 @@
 [image1]: https://user-images.githubusercontent.com/10624937/43851024-320ba930-9aff-11e8-8493-ee547c6af349.gif "Trained Agent"
 [image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
-[image3]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
-
-
+[image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-gradient.svg "VPG-Loss"
+[image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-algorithm.svg "VPG-Algorithm"
 
 # Project 1: Navigation
 
@@ -40,7 +39,7 @@ This environment is not MDP because it's next state doesn't depend on previous s
 
 ### Crawler [TODO: implement]
 
-![Crawler][image1]
+![Crawler][image2]
  
 ## Project Goals
 
@@ -62,27 +61,61 @@ In such setting input of Policy is state and output is probability distribution 
 
 PO algorithm then would need to push probilities of actions yielding high reward up and decrease probabilities of bad actions.
 
-Gradient of return of policy is donoted as 
+Gradient of return of policy is denoted as:
 
+![VPG-Loss][image3]
 
+PO algorithm then updates policy using gradient ascend. A is training signal and is typically a Reward or advantage signal. 
 
+### Vanilla Policy Gradient
 
+The basic PO algorithm is **Vanilla Policy Gradient (VPG)**
+
+![VPG][image4]
+
+VPG is on-policy algorithm meaning that it doesn't use sample from past. It suffers from bias error and also of high-variance. [1]
+
+### Soft Actor Critic
+
+More recent algorithm in PO family is **Soft-Actor Critic (SAC)** [2]. SAC is off-policy algorithm and fixes some of drawbacks of VPG with sample-inneficiency, high variance, exploration and biasing. 
+
+SAC uses following techniques:
+
+* Clipped double-Q trick
+* Entropy regularization
 
 ## Results
 
-### Hyperparameters
+### Reacher
 
-### Rewards-per-Episode Plots
+#### Neural Networks
 
-* [Vanilla DQN Rewards-Per-Episode](https://github.com/cwiz/DRLND-Project-Navigation/blob/master/images/variant-1.png)
-* [Double DQN Rewards-Per-Episode](https://github.com/cwiz/DRLND-Project-Navigation/blob/master/images/variant-2.png)
-* [Dueling DQN Rewards-Per-Episode](https://github.com/cwiz/DRLND-Project-Navigation/blob/master/images/variant-2.png)
+#### Hyperparameters
+
+```python
+LR = 3e-3
+GAMMA = 0.99
+BATCH_SIZE = 256
+BUFFER_SIZE = int(1e6)
+ALPHA = 0.01
+TAU = 0.05
+TARGET_UPDATE_INTERVAL = 1
+GRADIENT_STEPS = 2
+```
+
+#### Rewards-per-Episode Plots
+
+### Crawler
+
+#### Neural Networks
+
+#### Hyperparameters
+
+#### Rewards-per-Episode Plots
+
+## Acknowledgements
 
 ## References
 
-[1] [V Mnih et al. *Human-level control through deep reinforcement
-learning*, Nature 518 529-533, 2015](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf)
-<br />
-[2] [Hado et al. *Deep Reinforcement Learning with Double Q-learning*, Arxiv, 2015](https://arxiv.org/abs/1509.06461)
-<br />
-[3] [Ziyu el al. *Dueling Network Architectures for Deep Reinforcement Learning*, Arxiv, 2015](https://arxiv.org/abs/1511.06581)
+[1] https://spinningup.openai.com/en/latest/algorithms/vpg.html
+[2] https://spinningup.openai.com/en/latest/algorithms/sac.html
