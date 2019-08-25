@@ -172,7 +172,7 @@ GRADIENT_STEPS = 2
 
 #### Rewards plot
 
-![Rewards][image4]
+![Rewards][image5]
 
 ### Crawler
 
