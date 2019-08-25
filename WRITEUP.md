@@ -14,7 +14,10 @@ Udacity Deep Reinforcement Learning Nanodegree
 Class of May 2019
 
 ## Project Description
-This project is about applying policy optimization algorithms to continous control tasks in Unity ML agent simulator. First task is called Reacher simulates two-joint robotic arm in reaching objective and second is Crawler which simulates four-legged two-join robot that has to learn locomotion.
+This project is about applying policy optimization algorithms to continuous control tasks in Unity ML agent simulator. 
+
+* **Reacher** simulates two-joint robotic arm that has to learn to reach an object
+* **Crawler** simulates four-legged two-join robot that has to learn locomotion
 
 ### Reacher
 
@@ -31,13 +34,13 @@ This project is about applying policy optimization algorithms to continous contr
 
 **Actions**
 
-* Continous vector space for rotations in 2 planes for arm's joints (size of 4)
+* Continuous vector space for rotations in 2 planes for arm's joints (size of 4)
 
 **Rewards**
 
-* Agent is getting rewards if end-effector is within green sphere
+* Agent is getting rewards if end-effector is within radius of green sphere
 
-This environment is not MDP because it's next state doesn't depend on previous state and action pair. Though difficulty of this environment with sparse initial rewards, and some algorithms that rely on Markovian dynamics models and instant feedback may fail to achieve convergence.
+Reacher environment provides sparse initial rewards. Because of that simple algorithms may fail to achieve initial convergence.
 
 ### Crawler [TODO: implement]
 
@@ -51,23 +54,21 @@ This environment is not MDP because it's next state doesn't depend on previous s
 
 ## Technical Formulation of Problem 
 
-* Set up Environemnt as described in [Project Repository](https://github.com/udacity/deep-reinforcement-learning/tree/master/p2_continuous-control)
+* Set up Environment as described in [Project Repository](https://github.com/udacity/deep-reinforcement-learning/tree/master/p2_continuous-control)
 * Complete Crawler.ipynb 
 * [Optional] Complete Reacher.ipynb 
 
 ## Mathematical Models
 
-**Policy Optimization (PO)** algorithms optimize stochastic Policy function. main motivation behind them is that they can deal with stochastisitiy and support continous control tasks (unlike DQN which only supports discretized control).
+**Policy Optimization (PO)** algorithms optimize stochastic Policy function. PO algorithms can deal with stochasticity and support continuous control tasks.
 
-In such setting input of Policy is state and output is probability distribution of actions. A Normal distribution is usually chosen and then output of policy is distribution parameters: mean and standard deviation.
-
-PO algorithm then would need to push probilities of actions yielding high reward up and decrease probabilities of bad actions.
+Input of continuous Policy is state and output is probability distribution of actions. A Normal distribution is usually chosen and output of policy is distribution parameters: mean and standard deviation. PO algorithm then would need to push probabilities of actions yielding high reward up and decrease probabilities of suboptimal ones.
 
 Gradient of return of policy is denoted as:
 
 ![VPG-Loss][image3]
 
-PO algorithm then updates policy using gradient ascend. A is training signal and is typically a Reward or advantage signal. 
+PO algorithm updates policy using gradient ascend. **A** signal is usually a Rewards (normalized / rewards-to-go) or Advantage (usually generalized advantage estimate). 
 
 ### Vanilla Policy Gradient
 
@@ -75,22 +76,36 @@ The basic PO algorithm is **Vanilla Policy Gradient (VPG)**
 
 ![VPG][image4]
 
-VPG is on-policy algorithm meaning that it doesn't use sample from past. It suffers from bias error and also of high-variance. [1]
+VPG is on-policy algorithm meaning that it doesn't use sample from experience. It is easy to implement and it works for basic environments, but it also suffers from biasiang and high variance. [1]
 
 ### Soft Actor Critic
 
-More recent algorithm in PO family is **Soft-Actor Critic (SAC)** [2]. SAC is off-policy algorithm and fixes some of drawbacks of VPG with sample-inneficiency, high variance, exploration and biasing. 
+More recent algorithm in PO family is **Soft-Actor Critic (SAC)** [2]. SAC is off-policy algorithm that fixes some of drawbacks of earlier PO algorithms it terms of sample-inefficiency, variance, biasing and exploration/exploitation.
 
 SAC uses following techniques:
 
-* Clipped double-Q trick
-* Entropy regularization
+#### Clipped double-Q trick
+
+Double Q-trick deals with drawback of DDPG (previous off-policy PO algorithm) where Q-network overestimates Q-values and then P-network starts to exploit Q-network which leads to breaking. Here we use two Q networks and then use smallest to train P-network on each iteration (which are initialized randomly and trained in same way). Intuition to this trick is that sible Q-network can develop sharp peaks for some of values, but having two of them smoothes this effect.
+
+#### Entropy regularization
+
+In entropy-regularized setting agent gets a bonus each time step proportional to entropy of policy. We regulate entropy by introducing a hyperparameter alpha. Then we re-formularize loss to include entropy. This approach enables us to regulate how much exploitation we want to get from a policy optimizer.
 
 ![SAC][image6]
 
 ## Results
 
 ### Reacher
+
+Prior choosing Soft-Actor Critic I have tested **Proximal-Policy Optimization (PPO)** and **Deep-Q-Prop** algorithms. They are implemented and included to ```algorithms``` directory but none were able to perform as well as SAC. 
+
+I would like to include some bits of experience obtained from implementing algorithms:
+
+* In sparse-initial reward setting major improvement was regulating number of optimization epochs per on-policy step
+* Batch-normalization helped to maintain monotonic learning curve in sparse-reward setting
+* Whether policy training takes of lot of time use of tensorboard is advices to visualize losses and rewards
+* It seems getting model a memory such as LSRM or GRU can improve it's performance in MDP settings (experiments omitted here)
 
 #### Neural Networks
 
