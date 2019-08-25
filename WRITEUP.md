@@ -2,7 +2,7 @@
 [image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
 [image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-gradient.svg?sanitize=true "VPG-Loss"
 [image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-algorithm.svg?sanitize=true "VPG-Algorithm"
-[image5]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/rewards.png "VPG-Algorithm"
+[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards.png?raw=true "Crawler-Rewards"
 [image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
 
 # Project 1: Navigation
