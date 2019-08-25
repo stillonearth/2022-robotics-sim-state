@@ -9,14 +9,14 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-4
+LR = 3e-3
 GAMMA = 0.99
 BATCH_SIZE = 256
 BUFFER_SIZE = int(1e6)
-ALPHA = 0.1
-TAU = 1e-3
+ALPHA = 0.01
+TAU = 0.05
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 1
+GRADIENT_STEPS = 2
 
 class Agent():
 
@@ -76,7 +76,6 @@ class Agent():
 
             # Calculate V and Q targets
             y_q = self.value_q(states, next_states, rewards, dones, self.value_network_target).detach()
-            # vl = self.value_q(states, next_states, rewards, dones, self.value_network_local)
             y_v = self.value_v(states)
 
             # Update Q-functions
@@ -132,10 +131,10 @@ class Agent():
     def sample_action(self, state, epsilon=1e-6):
         (mean, stddev) = self.policy_network(state)
         sigma = torch.distributions.Normal(0, 1).sample()
-        action = torch.tanh(mean + stddev * sigma)
-        log_prob = torch.distributions.Normal(mean, stddev).log_prob(mean + stddev*sigma) - torch.log(1 - action.pow(2) + epsilon)
+        action = mean + stddev * sigma
+        log_prob = torch.distributions.Normal(mean, stddev).log_prob(action)
 
-        return action, log_prob
+        return torch.tanh(action), log_prob
 
     def act(self, state):
         state = torch.from_numpy(state).float().to(self.device)
