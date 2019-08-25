@@ -94,7 +94,7 @@ SAC uses following techniques:
 
 #### Neural Networks
 
-```
+```python
 NET_SIZE = 128
 
 class Policy(nn.Module):
