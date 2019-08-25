@@ -187,4 +187,5 @@ GRADIENT_STEPS = 2
 ## References
 
 [1] https://spinningup.openai.com/en/latest/algorithms/vpg.html
+
 [2] https://spinningup.openai.com/en/latest/algorithms/sac.html
