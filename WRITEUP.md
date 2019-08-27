@@ -2,8 +2,9 @@
 [image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
 [image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-gradient.svg?sanitize=true "VPG-Loss"
 [image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-algorithm.svg?sanitize=true "VPG-Algorithm"
-[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards.png?raw=true "Crawler-Rewards"
+[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards-reacher.png?raw=true "Crawler-Rewards"
 [image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
+[image7]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards-crawler.png?raw=true "Crawler-Crawler"
 
 # Project 1: Navigation
 
@@ -94,20 +95,9 @@ In entropy-regularized setting agent gets a bonus each time step proportional to
 
 ![SAC][image6]
 
-## Results
+## Neural Networks
 
-### Reacher
-
-Prior choosing Soft-Actor Critic I have tested **Proximal-Policy Optimization (PPO)** and **Deep-Q-Prop** algorithms. They are implemented and included to ```algorithms``` directory but none were able to perform as well as SAC. 
-
-I would like to include some bits of experience obtained from implementing algorithms:
-
-* In sparse-initial reward setting major improvement was regulating number of optimization epochs per on-policy step
-* Batch-normalization helped to maintain monotonic learning curve in sparse-reward setting
-* Whether policy training takes of lot of time use of tensorboard is advices to visualize losses and rewards
-* It seems getting model a memory such as LSRM or GRU can improve it's performance in MDP settings (experiments omitted here)
-
-#### Neural Networks
+Both environments used identical Neural Network architectures. Here are PyTorch classes describing them:
 
 ```python
 NET_SIZE = 128
@@ -172,6 +162,19 @@ class Q(nn.Module):
         return self.fc3(x)
 ```
 
+## Results
+
+### Reacher
+
+Prior choosing Soft-Actor Critic I have tested **Proximal-Policy Optimization (PPO)** and **Deep-Q-Prop** algorithms. They are implemented and included to ```algorithms``` directory but none were able to perform as well as SAC. 
+
+I would like to include some bits of experience obtained from implementing algorithms:
+
+* In sparse-initial reward setting major improvement was regulating number of optimization epochs per on-policy step
+* Batch-normalization helped to maintain monotonic learning curve in sparse-reward setting
+* Whether policy training takes of lot of time use of tensorboard is advices to visualize losses and rewards
+* It seems getting model a memory such as LSRM or GRU can improve it's performance in MDP settings (experiments omitted here)
+
 #### Hyperparameters
 
 ```python
@@ -191,11 +194,23 @@ GRADIENT_STEPS = 2
 
 ### Crawler
 
-#### Neural Networks
-
 #### Hyperparameters
 
+```python
+LR = 3e-4
+GAMMA = 0.99
+BATCH_SIZE = 256
+BUFFER_SIZE = int(1e6)
+ALPHA = 0.2
+TAU = 0.005
+TARGET_UPDATE_INTERVAL = 1
+GRADIENT_STEPS = 1
+
+```
+
 #### Rewards plot
+
+![Rewards][image7]
 
 ## Acknowledgements
 

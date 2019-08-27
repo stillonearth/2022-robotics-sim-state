@@ -9,14 +9,14 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-3
+LR = 3e-4
 GAMMA = 0.99
 BATCH_SIZE = 256
 BUFFER_SIZE = int(1e6)
-ALPHA = 0.01
-TAU = 0.05
+ALPHA = 0.2
+TAU = 0.005
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 2
+GRADIENT_STEPS = 1
 
 class Agent():
 
@@ -86,6 +86,7 @@ class Agent():
 
             # Update V-function
             v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
+            torch.nn.utils.clip_grad_norm_(self.value_network_local.parameters(), 1)
             self.optimize_loss(v_loss, self.value_optimizer)
 
             # Update Policy-function
