@@ -1,10 +1,10 @@
 [image1]: https://user-images.githubusercontent.com/10624937/43851024-320ba930-9aff-11e8-8493-ee547c6af349.gif "Trained Agent"
 [image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
-[image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-gradient.svg?sanitize=true "VPG-Loss"
-[image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/vpg-algorithm.svg?sanitize=true "VPG-Algorithm"
-[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards-reacher.png?raw=true "Crawler-Rewards"
-[image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/ok/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
-[image7]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/ok/images/rewards-crawler.png?raw=true "Crawler-Crawler"
+[image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/vpg-gradient.svg?sanitize=true "VPG-Loss"
+[image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/vpg-algorithm.svg?sanitize=true "VPG-Algorithm"
+[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/images/rewards-reacher.png?raw=true "Crawler-Rewards"
+[image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
+[image7]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/images/rewards-crawler.png?raw=true "Crawler-Crawler"
 
 # Project 1: Navigation
 
