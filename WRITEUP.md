@@ -214,8 +214,14 @@ GRADIENT_STEPS = 1
 
 ## Acknowledgements
 
+github.com/luigifaticoso for implementation of reparameterization trick.
+
 ## References
 
 [1] https://spinningup.openai.com/en/latest/algorithms/vpg.html
 
 [2] https://spinningup.openai.com/en/latest/algorithms/sac.html
+
+[3] https://github.com/luigifaticoso/Soft-Actor-Critic-with-lunar-lander-continuos-v2
+
+**TODO** Add links to original papers
