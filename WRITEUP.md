@@ -43,9 +43,27 @@ This project is about applying policy optimization algorithms to continuous cont
 
 Reacher environment provides sparse initial rewards. Because of that simple algorithms may fail to achieve initial convergence.
 
-### Crawler [TODO: implement]
+### Crawler
 
 ![Crawler][image2]
+
+**Goal**
+
+* Move straight and avoid falling
+* Achieve average score over 30 over 100 episodes with 1000 frames each
+
+**Observation**
+
+* 117 variables corresponding to position, rotation, velocity, and angular velocities of each limb plus the acceleration and angular acceleration of the body
+
+**Actions**
+
+* Vector Action space: (Continuous) Size of 20, corresponding to target rotations for joints.
+
+**Rewards**
+
+* +0.03 times body velocity in the goal direction
+* +0.01 times body direction alignment with goal direction
  
 ## Project Goals
 
@@ -57,7 +75,7 @@ Reacher environment provides sparse initial rewards. Because of that simple algo
 
 * Set up Environment as described in [Project Repository](https://github.com/udacity/deep-reinforcement-learning/tree/master/p2_continuous-control)
 * Complete Crawler.ipynb 
-* [Optional] Complete Reacher.ipynb 
+* Complete Reacher.ipynb 
 
 ## Mathematical Models
 
@@ -65,7 +83,7 @@ Reacher environment provides sparse initial rewards. Because of that simple algo
 
 Input of continuous Policy is state and output is probability distribution of actions. A Normal distribution is usually chosen and output of policy is distribution parameters: mean and standard deviation. PO algorithm then would need to push probabilities of actions yielding high reward up and decrease probabilities of suboptimal ones.
 
-Gradient of return of policy is denoted as:
+Gradient of return of policy is defined as [1]:
 
 ![VPG-Loss][image3]
 
@@ -87,7 +105,7 @@ SAC uses following techniques:
 
 #### Clipped double-Q trick
 
-Double Q-trick deals with drawback of DDPG (previous off-policy PO algorithm) where Q-network overestimates Q-values and then P-network starts to exploit Q-network which leads to breaking. Here we use two Q networks and then use smallest to train P-network on each iteration (which are initialized randomly and trained in same way). Intuition to this trick is that sible Q-network can develop sharp peaks for some of values, but having two of them smoothes this effect.
+Double Q-trick deals with drawback of DDPG (previous off-policy PO algorithm) where Q-network overestimates Q-values and then P-network starts to exploit Q-network which leads to breaking. Here we use two Q networks and then use smallest to train P-network on each iteration (which are initialized randomly and trained in same way). Intuition to this trick is that single Q-network can develop sharp peaks at some of values, but having two of them smoothes this effect. [5]
 
 #### Entropy regularization
 
@@ -100,8 +118,6 @@ In entropy-regularized setting agent gets a bonus each time step proportional to
 Both environments used identical Neural Network architectures. Here are PyTorch classes describing them:
 
 ```python
-NET_SIZE = 128
-
 class Policy(nn.Module):
     
     def __init__(self, state_size, action_size=1, n_agents=1, fc1_size=NET_SIZE, fc2_size=NET_SIZE):
@@ -178,6 +194,7 @@ I would like to include some bits of experience obtained from implementing algor
 #### Hyperparameters
 
 ```python
+NET_SIZE = 128
 LR = 3e-3
 GAMMA = 0.99
 BATCH_SIZE = 256
@@ -197,6 +214,7 @@ GRADIENT_STEPS = 2
 #### Hyperparameters
 
 ```python
+NET_SIZE = 256
 LR = 3e-4
 GAMMA = 0.99
 BATCH_SIZE = 256
@@ -205,7 +223,6 @@ ALPHA = 0.2
 TAU = 0.005
 TARGET_UPDATE_INTERVAL = 1
 GRADIENT_STEPS = 1
-
 ```
 
 #### Rewards plot
@@ -216,12 +233,18 @@ GRADIENT_STEPS = 1
 
 github.com/luigifaticoso for implementation of reparameterization trick.
 
+## Future Work
+
+Chosen method was sufficient to solve two environments. It is sample efficient and has good convergence properties. On the other hand pure on-policy methods such as PPO allow to include recurrent cells to the model,which allows model to reason in temporal terms. Adding memory to off-policy methods is not straightforward. Another improvement can be made with Prioritized Experience Replay to improve model's convergence and training time.
+
 ## References
 
-[1] https://spinningup.openai.com/en/latest/algorithms/vpg.html
+[1] OpenAI, Spinning Up DeepRL, Vanilla Policy Gradient, 2018, https://spinningup.openai.com/en/latest/algorithms/vpg.html
 
-[2] https://spinningup.openai.com/en/latest/algorithms/sac.html
+[2] OpenAI, Spinning Up DeepRL, Soft Actor-Critic, 2018, https://spinningup.openai.com/en/latest/algorithms/sac.html
 
-[3] https://github.com/luigifaticoso/Soft-Actor-Critic-with-lunar-lander-continuos-v2
+[3] Luigi Faticoso, Soft actor-critic implemented using pytorch on Lunar Lander Continuos, https://github.com/luigifaticoso/Soft-Actor-Critic-with-lunar-lander-continuos-v2
 
-**TODO** Add links to original papers
+[4] Unity Agents, Example Learning Environments, https://github.com/Unity-Technologies/ml-agents/blob/master/docs/Learning-Environment-Examples.md#crawler
+
+[5] OpenAI, Spinning Up DeepRL, Twin Delayed DDPG, 2018, https://spinningup.openai.com/en/latest/algorithms/td3.html
