@@ -6,7 +6,7 @@
 [image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
 [image7]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/images/rewards-crawler.png?raw=true "Crawler-Crawler"
 
-# Project 1: Navigation
+# Project 2: Continuous Control 
 
 **Sergei Surovtsev**
 <br/>
