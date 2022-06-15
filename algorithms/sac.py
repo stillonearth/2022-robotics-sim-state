@@ -80,21 +80,31 @@ class Agent():
 
             # Update Q-functions
             q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_1, self.q_optimizer_1)
+            q_loss_1.backward() #
+            # self.optimize_loss(q_loss_1, self.q_optimizer_1)
+            
             q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_2, self.q_optimizer_2)
+            q_loss_2.backward() #
+            # self.optimize_loss(q_loss_2, self.q_optimizer_2)
 
             # Update V-function
             v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
             torch.nn.utils.clip_grad_norm_(self.value_network_local.parameters(), 1)
-            self.optimize_loss(v_loss, self.value_optimizer)
+            # self.optimize_loss(v_loss, self.value_optimizer)
+            v_loss.backward()
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
             
             p_loss = -(self.q_network_1(states, p_actions) - ALPHA * p_log_probs).mean()
             torch.nn.utils.clip_grad_norm_(self.policy_network.parameters(), 1)
-            self.optimize_loss(p_loss, self.policy_optimizer)
+            # self.optimize_loss(p_loss, self.policy_optimizer)
+            p_loss.backward()
+
+            self.q_optimizer_1.step()
+            self.q_optimizer_2.step()
+            self.value_optimizer.step()
+            self.policy_optimizer.step()
 
             # update Value network
             self.soft_update(self.value_network_local, self.value_network_target)
