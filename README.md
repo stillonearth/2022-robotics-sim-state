@@ -11,7 +11,7 @@
 **Sergei Surovtsev**
 
 ## Project Description
-This project involves applying policy optimization algorithms to continuous control task MuJoCo simulator and meta-learning 4-DoF control system for a robotic dog. 
+This project involves applying policy optimization algorithms to continuous control task in MuJoCo simulator and meta-learning control system for a robotic dog. 
 
 ### Ant-G1 Forward Movement Environment
 
@@ -125,6 +125,8 @@ Adopted **MAML-TRPO** code: https://github.com/stillonearth/pytorch-maml-rl
 * This work is primarily adaptation of previous solutions and evaluation of Mid-2022 state of robotic simulators
 * MAML-TRPO as of now works only on CPU setup, CUDA implementation is bugged somewhere in mp code
 * In layman terms SAC proves that control problem can be solved in principle, MAML solution shows feasibility of synthesized control system
+* Environment for distance control: https://github.com/stillonearth/2022-robotics-sim-state/blob/master/environments/g1_distance.py
+* Environment for meta-directional control: https://github.com/stillonearth/pytorch-maml-rl/blob/master/maml_rl/envs/mujoco/g1.py
 
 ## References
 
