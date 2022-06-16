@@ -13,8 +13,6 @@
 ## Project Description
 This project involves applying policy optimization algorithms to continuous control task MuJoCo simulator and meta-learning 4-DoF control system for a robotic dog. 
 
-![Unitree G1][image1]
-
 ### Ant-G1 Forward Movement Environment
 
 **Goal**
