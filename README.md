@@ -131,6 +131,8 @@ Adopted **MAML-TRPO** code: https://github.com/stillonearth/pytorch-maml-rl
 ## References
 
 [1] Chelsea Finn, Pieter Abbeel, Sergey Levine, Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks, 2017, https://arxiv.org/abs/1703.03400
+
 [2] Sergei Surovtsev, Using Policy Optimization (PO) Algorithms Soft Actor-Critic (SAC) and Proximal Policy Optimization (PPO) for Solving Unity ML Reacher and Crawler Continous Control Environments, 2019, https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/WRITEUP.md
+
 [3] Tristan Deleu, Reinforcement Learning with Model-Agnostic Meta-Learning (MAML), https://github.com/tristandeleu/pytorch-maml-rl
 
