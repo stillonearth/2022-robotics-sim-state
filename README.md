@@ -124,9 +124,9 @@ Adopted **MAML-TRPO** code: https://github.com/stillonearth/pytorch-maml-rl
 
 ## Notes
 
-* This work is primarily adaptation of previous solutions and evaluation of Mid-2022 state of robotic simulators.
-* MAML-TRPO as of now doesn't works only on CPU set up, CUDA implementation is bugged somewhere in mp code
-* In layman terms: SAC proves that control problem can be solved in principle, MAML solution shows feasibility of synthesized control system.
+* This work is primarily adaptation of previous solutions and evaluation of Mid-2022 state of robotic simulators
+* MAML-TRPO as of now works only on CPU setup, CUDA implementation is bugged somewhere in mp code
+* In layman terms SAC proves that control problem can be solved in principle, MAML solution shows feasibility of synthesized control system
 
 ## References
 
