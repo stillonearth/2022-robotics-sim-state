@@ -98,10 +98,6 @@ git clone https://github.com/stillonearth/pytorch-maml-rl && cd pytorch-maml-rl
 python3 train.py --config configs/maml/g1-dir.yaml --output-folder maml-g1-dir --seed 1 --num-workers 1
 ```
 
-#### Hyperparameters
-
-`pytorch-maml` [config file](https://github.com/stillonearth/pytorch-maml-rl/blob/master/configs/maml/g1-dir.yaml)
-
 #### Rewards plot
 
 *ommited*
