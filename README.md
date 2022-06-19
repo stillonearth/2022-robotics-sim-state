@@ -85,20 +85,6 @@ Neural Networks used in this project are straight from previous work [1].
 
 ### G1 — Forward Task with SAC
 
-#### Hyperparameters
-
-```python
-NET_SIZE = 512
-LR = 3e-4
-GAMMA = 0.99
-BATCH_SIZE = 256
-BUFFER_SIZE = int(1e6)
-ALPHA = 0.2
-TAU = 0.005
-TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 1
-```
-
 #### Rewards plot
 
 ![Rewards][image2]
@@ -106,6 +92,11 @@ GRADIENT_STEPS = 1
 ### G1 — MAML Direction with TRPO
 
 Adopted **MAML-TRPO** code: https://github.com/stillonearth/pytorch-maml-rl
+
+```bash
+git clone https://github.com/stillonearth/pytorch-maml-rl && cd pytorch-maml-rl
+python3 train.py --config configs/maml/g1-dir.yaml --output-folder maml-g1-dir --seed 1 --num-workers 1
+```
 
 #### Hyperparameters
 
