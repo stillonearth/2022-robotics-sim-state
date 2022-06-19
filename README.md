@@ -1,12 +1,12 @@
 [image1]: https://www.unitree.com/uploads/531_(3)_e17eb66c60.png "Unitree G1"
-[image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Rewards - G1"
+[image2]: https://github.com/stillonearth/2022-robotics-sim-state/blob/master/images/rewards-g1.png?raw=true "Rewards - G1"
 
 # Meta-Trained Continuous Control System for Robotic Dog Unitree G1
 
 **Sergei Surovtsev**
 
 ## Project Description
-This project involves applying policy optimization algorithms to continuous control task in MuJoCo simulator and meta-learning control system for a robotic dog. 
+This project involves applying policy optimization algorithms to continuous control task for Unitree G1 robot in MuJoCo simulator and meta-learning control system for it. 
 
 ### Ant-G1 Forward Movement Environment
 
@@ -38,7 +38,7 @@ This project involves applying policy optimization algorithms to continuous cont
 
 **Observation**
 
-*same as in previous task*
+*same as in previous task* + direction and orientation model
 
 **Actions**
 
@@ -101,7 +101,7 @@ GRADIENT_STEPS = 1
 
 #### Rewards plot
 
-*ommited*
+![Rewards][image2]
 
 ### G1 — MAML Direction with TRPO
 
