@@ -1,10 +1,5 @@
 [image1]: https://www.unitree.com/uploads/531_(3)_e17eb66c60.png "Unitree G1"
-[image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
-[image3]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/vpg-gradient.svg?sanitize=true "VPG-Loss"
-[image4]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/vpg-algorithm.svg?sanitize=true "VPG-Algorithm"
-[image5]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/images/rewards-reacher.png?raw=true "Crawler-Rewards"
-[image6]: https://raw.githubusercontent.com/cwiz/DRLND-Project-Continuous_Control/master/images/sac-algorithm.svg?sanitize=true "SAC-Algorithm"
-[image7]: https://github.com/cwiz/DRLND-Project-Continuous_Control/blob/master/images/rewards-crawler.png?raw=true "Crawler-Crawler"
+[image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Rewards - G1"
 
 # Meta-Trained Continuous Control System for Robotic Dog Unitree G1
 
