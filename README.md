@@ -79,7 +79,7 @@ Neural Networks used in this project are straight from previous work [1].
 
 ### MMAL TRPO — Direction
 
-64x64 fully-connected with tanh activation
+Oracle variant from [3]
 
 ## Results
 
