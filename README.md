@@ -99,6 +99,25 @@ python3 train.py --config configs/maml/g1-dir.yaml --output-folder maml-g1-dir -
 python3 test.py --config maml-g1-dir/config.json --policy maml-g1-dir/policy.th --output maml-g1-dir/results.npz --meta-batch-size 40 --num-batches 10  --num-workers 1
 ```
 
+#### How to use oracle meta-policy
+
+```
+# get environment obervations
+observations = self.envs.step(action) 
+
+# append task meta-parameters
+new_observations = []
+for i, env in enumerate(self.envs.envs):
+    [np.append(observations[i], env.unwrapped.meta_params()))
+observations = np.array(new_observations)
+
+# invoke policy
+with torch.no_grad():
+    while not self.envs.dones.all():
+        observations_tensor = torch.from_numpy(observations).to(torch.float32)
+        pi = self.policy(observations_tensor, params=params)
+```
+
 #### Rewards plot
 
 *ommited*
