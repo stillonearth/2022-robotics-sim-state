@@ -79,7 +79,7 @@ Neural Networks used in this project are straight from previous work [1].
 
 ### MMAL TRPO — Direction
 
-Oracle variant from [3]
+Oracle policy: meta-training step includes task parameters as inputs.  [3]
 
 ## Results
 
@@ -96,6 +96,7 @@ Adopted **MAML-TRPO** code: https://github.com/stillonearth/pytorch-maml-rl
 ```bash
 git clone https://github.com/stillonearth/pytorch-maml-rl && cd pytorch-maml-rl
 python3 train.py --config configs/maml/g1-dir.yaml --output-folder maml-g1-dir --seed 1 --num-workers 1
+python3 test.py --config maml-g1-dir/config.json --policy maml-g1-dir/policy.th --output maml-g1-dir/results.npz --meta-batch-size 40 --num-batches 10  --num-workers 1
 ```
 
 #### Rewards plot
