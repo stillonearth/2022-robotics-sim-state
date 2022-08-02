@@ -1,7 +1,7 @@
 [image1]: https://www.unitree.com/uploads/531_(3)_e17eb66c60.png "Unitree G1"
 [image2]: https://github.com/stillonearth/2022-robotics-sim-state/blob/master/images/rewards-g1.png?raw=true "Rewards - G1"
 
-# Meta-Trained Continuous Control System for Robotic Dog Unitree G1
+# [DRAFT] Meta-Trained Continuous Control System for Robotic Dog Unitree G1
 
 **Sergei Surovtsev**
 
