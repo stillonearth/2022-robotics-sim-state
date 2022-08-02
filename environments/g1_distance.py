@@ -15,12 +15,12 @@ class G1DistanceEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         xposbefore = self.get_body_com("trunk")[0]
         self.do_simulation(a, self.frame_skip)
         xposafter = self.get_body_com("trunk")[0]
-        self.render()
+        # self.render()
 
         forward_reward = (xposafter - xposbefore) / self.dt
         ctrl_cost = 0.5 * np.square(a).sum()
         contact_cost = (
-            0.5 * 1e-3 * np.sum(np.square(np.clip(self.sim.data.cfrc_ext, -1, 1)))
+            0.5 * 1e-3 * np.sum(np.square(np.clip(self.data.cfrc_ext, -1, 1)))
         )
         survive_reward = 1.0
         reward = forward_reward - ctrl_cost - contact_cost + survive_reward
@@ -43,9 +43,9 @@ class G1DistanceEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def _get_obs(self):
         return np.concatenate(
             [
-                self.sim.data.qpos.flat[2:],
-                self.sim.data.qvel.flat,
-                np.clip(self.sim.data.cfrc_ext, -1, 1).flat,
+                self.data.qpos.flat[2:],
+                self.data.qvel.flat,
+                np.clip(self.data.cfrc_ext, -1, 1).flat,
             ]
         )
 
