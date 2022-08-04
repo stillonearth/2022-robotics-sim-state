@@ -73,7 +73,6 @@ class Agent():
             y_q = self.value_q(states, next_states, rewards, dones, self.value_network_target).detach()
             y_v = self.value_v(states)
 
-            
             # Update V-function
             v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
             torch.nn.utils.clip_grad_norm_(self.value_network_local.parameters(), 1)
@@ -100,11 +99,6 @@ class Agent():
             self.q_optimizer_2.zero_grad()
             q_loss_2.backward()
             self.q_optimizer_2.step()
-
-            # self.q_optimizer_1.step()
-            # self.q_optimizer_2.step()
-            # self.value_optimizer.step()
-            # self.policy_optimizer.step()
 
             # update Value network
             self.soft_update(self.value_network_local, self.value_network_target)
