@@ -4,11 +4,28 @@ import numpy as np
 from gym import utils
 from gym.envs.mujoco import mujoco_env
 
+from gym.spaces import Box
+
 
 class G1DistanceEnv(mujoco_env.MujocoEnv, utils.EzPickle):
+    
+    metadata = {
+        "render_modes": [
+            "human",
+            "rgb_array",
+            "depth_array",
+            "single_rgb_array",
+            "single_depth_array",
+        ],
+        "render_fps": 500,
+    }
+
     def __init__(self):
+        observation_space = Box(
+            low=-np.inf, high=np.inf, shape=(119,), dtype=np.float64
+        )
         xml_path = os.path.abspath("./environments/xml/go1.xml")
-        mujoco_env.MujocoEnv.__init__(self, xml_path, 1)
+        mujoco_env.MujocoEnv.__init__(self, xml_path, 1, observation_space=observation_space)
         utils.EzPickle.__init__(self)
 
     def step(self, a):

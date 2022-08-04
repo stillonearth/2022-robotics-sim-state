@@ -60,11 +60,6 @@ class Agent():
 
         return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
-    def optimize_loss(self, loss, optimizer):
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
     def write_loss_to_log(self, loss, name):
         self.writer.add_scalar(name, loss.detach().cpu().numpy())
 
@@ -78,23 +73,38 @@ class Agent():
             y_q = self.value_q(states, next_states, rewards, dones, self.value_network_target).detach()
             y_v = self.value_v(states)
 
-            # Update Q-functions
-            q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_1, self.q_optimizer_1)
-            q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_2, self.q_optimizer_2)
-
+            
             # Update V-function
             v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
             torch.nn.utils.clip_grad_norm_(self.value_network_local.parameters(), 1)
-            self.optimize_loss(v_loss, self.value_optimizer)
+            self.value_optimizer.zero_grad()
+            v_loss.backward()
+            self.value_optimizer.step()
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
             
             p_loss = -(self.q_network_1(states, p_actions) - ALPHA * p_log_probs).mean()
             torch.nn.utils.clip_grad_norm_(self.policy_network.parameters(), 1)
-            self.optimize_loss(p_loss, self.policy_optimizer)
+            self.policy_optimizer.zero_grad()
+            p_loss.backward()
+            self.policy_optimizer.step()
+
+            # Update Q-functions
+            q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
+            self.q_optimizer_1.zero_grad()
+            q_loss_1.backward() 
+            self.q_optimizer_1.step()
+            
+            q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
+            self.q_optimizer_2.zero_grad()
+            q_loss_2.backward()
+            self.q_optimizer_2.step()
+
+            # self.q_optimizer_1.step()
+            # self.q_optimizer_2.step()
+            # self.value_optimizer.step()
+            # self.policy_optimizer.step()
 
             # update Value network
             self.soft_update(self.value_network_local, self.value_network_target)
@@ -104,6 +114,11 @@ class Agent():
             self.write_loss_to_log(q_loss_2, 'rewards/q_loss_2')
             self.write_loss_to_log(p_loss, 'rewards/p_loss')
             self.write_loss_to_log(v_loss, 'rewards/v_loss')
+
+    def optimize_loss(self, loss, optimizer):
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     def soft_update(self, local_model, target_model, tau=TAU):
         """Soft update model parameters.

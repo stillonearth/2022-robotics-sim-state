@@ -1,7 +1,6 @@
 __all__ = ["g1_distance"]
 
 import gym
-import envpool
 
 
 gym.envs.register(
