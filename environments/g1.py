@@ -11,7 +11,6 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 
-
 class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     metadata = {
         "render_modes": [
@@ -31,7 +30,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         contact_cost_weight=5e-4,
         healthy_reward=1.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.5, 5.0),
+        healthy_z_range=(0.057, 5.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.1,
         exclude_current_positions_from_observation=True,
@@ -43,15 +42,11 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
-
         self._healthy_reward = healthy_reward
         self._terminate_when_unhealthy = terminate_when_unhealthy
         self._healthy_z_range = healthy_z_range
-
         self._contact_force_range = contact_force_range
-
         self._reset_noise_scale = reset_noise_scale
-
         self._use_contact_forces = use_contact_forces
 
         self._exclude_current_positions_from_observation = (
@@ -171,7 +166,8 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         )
         qvel = (
             self.init_qvel
-            + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
+            + self._reset_noise_scale *
+            self.np_random.standard_normal(self.model.nv)
         )
         self.set_state(qpos, qvel)
 
