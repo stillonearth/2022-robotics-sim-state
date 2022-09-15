@@ -138,8 +138,8 @@
             </body>
         </body>
     </worldbody>
-    <actuator>
 
+    <actuator>
         <motor name="FR_hip" gear="1" joint="FR_hip_joint"/>
         <motor name="FR_thigh" gear="1" joint="FR_thigh_joint"/>
         <motor name="FR_calf" gear="1" joint="FR_calf_joint"/>
@@ -155,7 +155,6 @@
     </actuator>
 
     <sensor>
-
         <jointpos name="FR_hip_pos" joint="FR_hip_joint"/>
         <jointpos name="FR_thigh_pos" joint="FR_thigh_joint"/>
         <jointpos name="FR_calf_pos" joint="FR_calf_joint"/>
@@ -189,7 +188,5 @@
         <framepos name="Body_Pos" objtype="site" objname="imu"/>
 
         <framequat name="Body_Quat" objtype="site" objname="imu"/>
-
-
     </sensor>
 </mujoco>
