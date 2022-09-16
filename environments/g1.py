@@ -46,7 +46,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         self._terminate_when_unhealthy = terminate_when_unhealthy
         self._healthy_z_range = healthy_z_range
         self._contact_force_range = contact_force_range
-        self._reset_noise_scale = reget_noise_scale
+        self._reset_noise_scale = reset_noise_scale
         self._use_contact_forces = use_contact_forces
 
         self._exclude_current_positions_from_observation = (
