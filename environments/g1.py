@@ -25,14 +25,14 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
     def __init__(
         self,
-        ctrl_cost_weight=0.5,
+        ctrl_cost_weight=0.0,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
         healthy_reward=1.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.1, 1.0),
         contact_force_range=(-1.0, 1.0),
-        reset_noise_scale=0.1,
+        reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
         **kwargs
     ):
@@ -170,9 +170,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
             self.np_random.standard_normal(self.model.nv)
         )
         self.set_state(qpos, qvel)
-
         observation = self._get_obs()
-
         return observation
 
     def viewer_setup(self):
