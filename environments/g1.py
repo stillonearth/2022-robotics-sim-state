@@ -25,12 +25,12 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
     def __init__(
         self,
-        ctrl_cost_weight=0.1,
+        ctrl_cost_weight=0.5,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
         healthy_reward=1.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.43/3., 10.0),
+        healthy_z_range=(0.43/4., 10.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
@@ -105,9 +105,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         return terminated
 
     def step(self, action):
-
         xy_position_before = self.get_body_com("trunk")[:2].copy()
-
         self.do_simulation(action, self.frame_skip)
         xy_position_after = self.get_body_com("trunk")[:2].copy()
 
