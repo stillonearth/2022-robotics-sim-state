@@ -25,12 +25,12 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
     def __init__(
         self,
-        ctrl_cost_weight=0.0,
+        ctrl_cost_weight=0.1,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
         healthy_reward=1.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.1, 1.0),
+        healthy_z_range=(0.43/2., 1.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
@@ -38,7 +38,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     ):
         utils.EzPickle.__init__(**locals())
 
-        xml_path = os.path.abspath("./environments/xml/go1.xml")
+        xml_path = os.path.abspath("./../mujoco_menagerie/unitree_a1/a1.xml")
 
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
