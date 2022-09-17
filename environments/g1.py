@@ -38,7 +38,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     ):
         utils.EzPickle.__init__(**locals())
 
-        xml_path = os.path.abspath("./../mujoco_menagerie/unitree_a1/a1.xml")
+        xml_path = os.path.abspath("./mujoco_menagerie/unitree_a1/a1.xml")
 
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
