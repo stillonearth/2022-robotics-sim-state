@@ -2,8 +2,7 @@ import numpy as np
 
 from gym import utils
 from gym.envs.mujoco import MujocoEnv
-from gym.spaces import Box
-from gym import Go
+from gym.spaces import Box, Dict
 
 import os
 
@@ -26,12 +25,12 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
     def __init__(
         self,
-        ctrl_cost_weight=0.01,
+        ctrl_cost_weight=0.5,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
-        healthy_reward=0.05,
+        healthy_reward=1.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.43/3., 10.0),
+        healthy_z_range=(0.1, 1.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
@@ -60,9 +59,9 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         if use_contact_forces:
             obs_shape += 84
 
-        observation_space = Box(
-            low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64
-        )
+        observation_space = Box(low=-np.inf, high=np.inf,
+                                shape=(obs_shape,), dtype=np.float64)
+        self.desired_goal = np.ones((obs_shape,))
 
         MujocoEnv.__init__(
             self, xml_path, 5, observation_space=observation_space, **kwargs
@@ -150,11 +149,14 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         if self._exclude_current_positions_from_observation:
             position = position[2:]
 
+        observation = None
         if self._use_contact_forces:
             contact_force = self.contact_forces.flat.copy()
-            return np.concatenate((position, velocity, contact_force))
+            observation = np.concatenate((position, velocity, contact_force))
         else:
-            return np.concatenate((position, velocity))
+            observation = np.concatenate((position, velocity))
+
+        return observation
 
     def reset_model(self):
         noise_low = -self._reset_noise_scale
@@ -180,29 +182,86 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
             else:
                 setattr(self.viewer.cam, key, value)
 
+
+class G1GoalDistanceEnv(G1DistanceEnv):
+
+    def __init__(
+        self,
+        ctrl_cost_weight=0.5,
+        use_contact_forces=True,
+        contact_cost_weight=5e-4,
+        healthy_reward=0.5,
+        terminate_when_unhealthy=True,
+        healthy_z_range=(0.1, 1.0),
+        contact_force_range=(-1.0, 1.0),
+        reset_noise_scale=0.05,
+        exclude_current_positions_from_observation=True,
+        **kwargs
+    ):
+        super().__init__(
+            ctrl_cost_weight,
+            use_contact_forces,
+            contact_cost_weight,
+            healthy_reward,
+            terminate_when_unhealthy,
+            healthy_z_range,
+            contact_force_range,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            ** kwargs,
+        )
+
+        obs_shape = 35
+        if not exclude_current_positions_from_observation:
+            obs_shape += 2
+        if use_contact_forces:
+            obs_shape += 84
+
+        observation_space = Dict({
+            "observation": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
+            "achieved_goal": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
+            "desired_goal": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
+        })
+
+        self.desired_goal = np.ones((obs_shape,))
+
+        xml_path = os.path.abspath("./mujoco_menagerie/unitree_a1/scene.xml")
+        MujocoEnv.__init__(
+            self, xml_path, 5, observation_space=observation_space, **kwargs
+        )
+
+    def _get_obs(self):
+        position = self.data.qpos.flat.copy()
+        velocity = self.data.qvel.flat.copy()
+
+        if self._exclude_current_positions_from_observation:
+            position = position[2:]
+
+        observation = None
+        if self._use_contact_forces:
+            contact_force = self.contact_forces.flat.copy()
+            observation = np.concatenate((position, velocity, contact_force))
+        else:
+            observation = np.concatenate((position, velocity))
+
+        return {
+            "observation": observation.copy(),
+            "achieved_goal": observation.copy(),
+            "desired_goal": self.desired_goal,
+        }
+
+    def compute_reward(self, achieved_goal, desired_goal, _info):
+        distance = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
+        return -(distance > 0).astype(np.float32)
+
     def reset(self):
-        # Enforce that each GoalEnv uses a Goal-compatible observation space.
-        if not isinstance(self.observation_space, gym.spaces.Dict):
-            raise error.Error('GoalEnv requires an observation space of type gym.spaces.Dict')
-        result = super(GoalEnv, self).reset()
+        # Enforce that each G1DistanceEnv uses a Goal-compatible observation space.
+        if not isinstance(self.observation_space, Dict):
+            raise error.Error(
+                'G1DistanceEnv requires an observation space of type gym.spaces.Dict')
+        result = super(G1DistanceEnv, self).reset()
         for key in ['observation', 'achieved_goal', 'desired_goal']:
             if key not in result:
-                raise error.Error('GoalEnv requires the "{}" key to be part of the observation dictionary.'.format(key))
+                raise error.Error(
+                    'G1DistanceEnv requires the "{}" key to be part of the observation dictionary.'.format(key))
         return result
-
-    def compute_reward(self, achieved_goal, desired_goal, info):
-        """Compute the step reward. This externalizes the reward function and makes
-        it dependent on an a desired goal and the one that was achieved. If you wish to include
-        additional rewards that are independent of the goal, you can include the necessary values
-        to derive it in info and compute it accordingly.
-        Args:
-            achieved_goal (object): the goal that was achieved during execution
-            desired_goal (object): the desired goal that we asked the agent to attempt to achieve
-            info (dict): an info dictionary with additional information
-        Returns:
-            float: The reward that corresponds to the provided achieved goal w.r.t. to the desired
-            goal. Note that the following should always hold true:
-                ob, reward, done, info = env.step()
-                assert reward == env.compute_reward(ob['achieved_goal'], ob['goal'], info)
-        """
-        raise NotImplementedError()
