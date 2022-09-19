@@ -190,7 +190,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         ctrl_cost_weight=0.5,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
-        healthy_reward=0.5,
+        healthy_reward=1.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.1, 1.0),
         contact_force_range=(-1.0, 1.0),
