@@ -1,3 +1,6 @@
 [submodule "mujoco_menagerie"]
 	path = mujoco_menagerie
 	url = https://github.com/deepmind/mujoco_menagerie.git
+[submodule "pytorch-maml-rl"]
+	path = pytorch-maml-rl
+	url = https://github.com/stillonearth/pytorch-maml-rl.git
