@@ -64,8 +64,8 @@ class Agent():
     def value_v(self, states, alpha=ALPHA):
         actions, log_probs = self.sample_action(states)
 
-        q_target_1 = self.q_network_1(states, actions.detach())
-        q_target_2 = self.q_network_2(states, actions.detach())
+        q_target_1 = self.q_network_1(states, actions.detach()).detach()
+        q_target_2 = self.q_network_2(states, actions.detach()).detach()
 
         return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
@@ -89,17 +89,17 @@ class Agent():
                                dones, self.value_network_target).detach()
             y_v = self.value_v(states)
 
-            # Update V-function
-            v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
-            torch.nn.utils.clip_grad_norm_(
-                self.value_network_local.parameters(), 1)
-            self.optimize_loss(v_loss, self.value_optimizer)
-
             # Update Q-functions
             q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_1, self.q_optimizer_1)
             q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_2, self.q_optimizer_2)
+
+            # Update V-function
+            v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
+            torch.nn.utils.clip_grad_norm_(
+                self.value_network_local.parameters(), 1)
+            self.optimize_loss(v_loss, self.value_optimizer)
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
