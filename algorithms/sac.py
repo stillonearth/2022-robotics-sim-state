@@ -9,9 +9,9 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-3
+LR = 1e-4
 GAMMA = 0.99
-BATCH_SIZE = 512
+BATCH_SIZE = 1024
 BUFFER_SIZE = int(1e6)
 ALPHA = 0.01
 TAU = 0.05
