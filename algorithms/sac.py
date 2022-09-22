@@ -16,12 +16,12 @@ BUFFER_SIZE = int(1e6)
 ALPHA = 0.01
 TAU = 0.05
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 2
+GRADIENT_STEPS = 1
 
 
 class Agent():
 
-    def __init__(self, state_size, action_size, policy_network, value_network, q_network, n_agents, device):
+    def __init__(self, state_size, action_size, actor, critic, n_agents, device):
 
         self.state_size = state_size
         self.action_size = action_size
@@ -29,26 +29,17 @@ class Agent():
         self.device = device
 
         # Initialize Policy Network
-        self.policy_network = policy_network(
+        self.actor = actor(
             state_size=state_size, action_size=action_size).to(device)
         self.policy_optimizer = optim.Adam(
-            self.policy_network.parameters(), lr=LR)
-
-        # Initialize Value Network
-        self.value_network_local = value_network(
-            state_size=state_size, action_size=action_size).to(device)
-        self.value_network_target = value_network(
-            state_size=state_size, action_size=action_size).to(device)
-        self.value_optimizer = optim.Adam(
-            self.value_network_local.parameters(), lr=LR)
+            self.actor.parameters(), lr=LR)
 
         # Initialize Q Network
-        self.q_network_1 = q_network(
+        self.q_1 = critic(
             state_size=state_size, action_size=action_size).to(device)
-        self.q_network_2 = q_network(
+        self.q_2 = critic(
             state_size=state_size, action_size=action_size).to(device)
-        self.q_optimizer_1 = optim.Adam(self.q_network_1.parameters(), lr=LR)
-        self.q_optimizer_2 = optim.Adam(self.q_network_2.parameters(), lr=LR)
+        self.q_optimizer = optim.Adam(self.q_1.parameters(), lr=LR)
 
         # Initialize Replay Memory
         self.memory = ReplayBuffer(
@@ -58,17 +49,6 @@ class Agent():
         self.step_counter = 0
         self.writer = SummaryWriter()
 
-    def value_q(self, states, next_states, rewards, dones, network, gamma=GAMMA):
-        return (rewards + gamma * (1 - dones) * network(next_states))
-
-    def value_v(self, states, alpha=ALPHA):
-        actions, log_probs = self.sample_action(states)
-
-        q_target_1 = self.q_network_1(states, actions.detach()).detach()
-        q_target_2 = self.q_network_2(states, actions.detach()).detach()
-
-        return torch.min(q_target_1, q_target_2) - alpha * log_probs
-
     def optimize_loss(self, loss, optimizer):
         optimizer.zero_grad()
         loss.backward()
@@ -76,6 +56,17 @@ class Agent():
 
     def write_loss_to_log(self, loss, name):
         self.writer.add_scalar(name, loss.detach().cpu().numpy())
+
+    def value_q(self, states, next_states, rewards, dones, target_v, gamma=GAMMA):
+        return (rewards + gamma * (1 - dones) * target_v)
+
+    def value_v(self, states, alpha=ALPHA):
+        actions, log_probs = self.sample_action(states)
+
+        q_target_1 = self.q_1(states, actions.detach()).detach()
+        q_target_2 = self.q_2(states, actions.detach()).detach()
+
+        return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
     def learn(self):
 
@@ -85,53 +76,28 @@ class Agent():
                 self.device)
 
             # Calculate V and Q targets
-            y_q = self.value_q(states, next_states, rewards,
-                               dones, self.value_network_target).detach()
             y_v = self.value_v(states)
+            y_q = self.value_q(states, next_states, rewards,
+                               dones, y_v.detach()).detach()
 
             # Update Q-functions
-            q_loss_1 = (self.q_network_1(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_1, self.q_optimizer_1)
-            q_loss_2 = (self.q_network_2(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_2, self.q_optimizer_2)
-
-            # Update V-function
-            v_loss = (self.value_network_local(states)-y_v).pow(2).mean()
-            torch.nn.utils.clip_grad_norm_(
-                self.value_network_local.parameters(), 1)
-            self.optimize_loss(v_loss, self.value_optimizer)
+            q_loss_1 = (self.q_1(states, actions) - y_q).pow(2).mean()
+            self.optimize_loss(q_loss_1, self.q_optimizer)
+            q_loss_2 = (self.q_2(states, actions) - y_q).pow(2).mean()
+            self.optimize_loss(q_loss_2, self.q_optimizer)
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
 
-            p_loss = -(self.q_network_1(states, p_actions) -
+            p_loss = -(self.q_1(states, p_actions) -
                        ALPHA * p_log_probs).mean()
-            torch.nn.utils.clip_grad_norm_(self.policy_network.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 1)
             self.optimize_loss(p_loss, self.policy_optimizer)
-
-            # update Value network
-            self.soft_update(self.value_network_local,
-                             self.value_network_target)
 
             # Write losses to tensorbord log
             self.write_loss_to_log(q_loss_1, 'rewards/q_loss_1')
             self.write_loss_to_log(q_loss_2, 'rewards/q_loss_2')
             self.write_loss_to_log(p_loss, 'rewards/p_loss')
-            self.write_loss_to_log(v_loss, 'rewards/v_loss')
-
-    def soft_update(self, local_model, target_model, tau=TAU):
-        """Soft update model parameters.
-        θ_target = τ*θ_local + (1 - τ)*θ_target
-
-        Params
-        ======
-            local_model (PyTorch model): weights will be copied from
-            target_model (PyTorch model): weights will be copied to
-            tau (float): interpolation parameter 
-        """
-        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
-            target_param.data.copy_(
-                tau*local_param.data + (1.0-tau)*target_param.data)
 
     def step(self, states, actions, rewards, next_states, dones):
         for i in range(states.shape[0]):
@@ -144,7 +110,7 @@ class Agent():
             self.step_counter = 0
 
     def sample_action(self, state, epsilon=1e-6):
-        (mean, stddev) = self.policy_network(state)
+        (mean, stddev) = self.actor(state)
         sigma = torch.distributions.Normal(0, 1).sample()
         action = mean + stddev * sigma
         log_prob = torch.distributions.Normal(mean, stddev).log_prob(action)
@@ -153,10 +119,10 @@ class Agent():
 
     def act(self, state):
         state = torch.from_numpy(state).float().to(self.device)
-        self.policy_network.eval()
+        self.actor.eval()
         with torch.no_grad():
-            action, _ = self.policy_network(state)
-        self.policy_network.train()
+            action, _ = self.actor(state)
+        self.actor.train()
 
         return action.detach().cpu().numpy()
 

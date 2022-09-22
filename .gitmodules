@@ -4,3 +4,6 @@
 [submodule "pytorch-maml-rl"]
 	path = pytorch-maml-rl
 	url = https://github.com/stillonearth/pytorch-maml-rl.git
+[submodule "pytorch_sac"]
+	path = pytorch_sac
+	url = https://github.com/denisyarats/pytorch_sac.git
