@@ -9,19 +9,19 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-4
+LR = 3e-3
 GAMMA = 0.99
-BATCH_SIZE = 1024
+BATCH_SIZE = 512
 BUFFER_SIZE = int(1e6)
-ALPHA = 0.01
+ALPHA = 0.2
 TAU = 0.005
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 2
+GRADIENT_STEPS = 1
 
 
 class Agent():
 
-    def __init__(self, state_size, action_size, actor, critic, n_agents, device):
+    def __init__(self, state_size, action_size, actor, value, critic, n_agents, device):
 
         self.state_size = state_size
         self.action_size = action_size
@@ -34,13 +34,21 @@ class Agent():
         self.policy_optimizer = optim.Adam(
             self.actor.parameters(), lr=LR)
 
+        # Initialize Value Network
+        self.value_local = value(
+            state_size=state_size, action_size=action_size).to(device)
+        self.value_target = value(
+            state_size=state_size, action_size=action_size).to(device)
+        self.value_optimizer = optim.Adam(
+            self.value_local.parameters(), lr=LR)
+
         # Initialize Q Network
-        self.q_1 = critic(
+        self.critic_1 = critic(
             state_size=state_size, action_size=action_size).to(device)
-        self.q_2 = critic(
+        self.critic_2 = critic(
             state_size=state_size, action_size=action_size).to(device)
-        self.q_optimizer_1 = optim.Adam(self.q_1.parameters(), lr=LR)
-        self.q_optimizer_2 = optim.Adam(self.q_2.parameters(), lr=LR)
+        self.q_optimizer_1 = optim.Adam(self.critic_1.parameters(), lr=LR)
+        self.q_optimizer_2 = optim.Adam(self.critic_2.parameters(), lr=LR)
 
         # Initialize Replay Memory
         self.memory = ReplayBuffer(
@@ -50,6 +58,17 @@ class Agent():
         self.step_counter = 0
         self.writer = SummaryWriter()
 
+    def value_q(self, states, next_states, rewards, dones, network, gamma=GAMMA):
+        return (rewards + gamma * (1 - dones) * network(next_states))
+
+    def value_v(self, states, alpha=ALPHA):
+        actions, log_probs = self.sample_action(states)
+
+        q_target_1 = self.critic_1(states, actions.detach())
+        q_target_2 = self.critic_2(states, actions.detach())
+
+        return torch.min(q_target_1, q_target_2) - alpha * log_probs
+
     def optimize_loss(self, loss, optimizer):
         optimizer.zero_grad()
         loss.backward()
@@ -57,17 +76,6 @@ class Agent():
 
     def write_loss_to_log(self, loss, name):
         self.writer.add_scalar(name, loss.detach().cpu().numpy())
-
-    def value_q(self, states, next_states, rewards, dones, target_v, gamma=GAMMA):
-        return (rewards + gamma * (1 - dones) * target_v)
-
-    def value_v(self, states, alpha=ALPHA):
-        actions, log_probs = self.sample_action(states)
-
-        q_target_1 = self.q_1(states, actions.detach()).detach()
-        q_target_2 = self.q_2(states, actions.detach()).detach()
-
-        return torch.min(q_target_1, q_target_2) - alpha * log_probs
 
     def learn(self):
 
@@ -77,28 +85,53 @@ class Agent():
                 self.device)
 
             # Calculate V and Q targets
-            y_v = self.value_v(states)
             y_q = self.value_q(states, next_states, rewards,
-                               dones, y_v.detach()).detach()
+                               dones, self.value_target).detach()
+            y_v = self.value_v(next_states)
 
             # Update Q-functions
-            q_loss_1 = (self.q_1(states, actions) - y_q).pow(2).mean()
+            q_loss_1 = (self.critic_1(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_1, self.q_optimizer_1)
-            q_loss_2 = (self.q_2(states, actions) - y_q).pow(2).mean()
+            q_loss_2 = (self.critic_2(states, actions) - y_q).pow(2).mean()
             self.optimize_loss(q_loss_2, self.q_optimizer_2)
+
+            # Update V-function
+            v_loss = (self.value_local(states)-y_v.detach()).pow(2).mean()
+            torch.nn.utils.clip_grad_norm_(
+                self.value_local.parameters(), 1)
+            self.optimize_loss(v_loss, self.value_optimizer)
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
 
-            p_loss = -(self.q_1(states, p_actions) -
+            p_loss = -(torch.min(self.critic_1(states, p_actions), self.critic_2(states, p_actions)) -
                        ALPHA * p_log_probs).mean()
             torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 1)
             self.optimize_loss(p_loss, self.policy_optimizer)
+
+            # update Value network
+            self.soft_update(self.value_local,
+                             self.value_target)
 
             # Write losses to tensorbord log
             self.write_loss_to_log(q_loss_1, 'rewards/q_loss_1')
             self.write_loss_to_log(q_loss_2, 'rewards/q_loss_2')
             self.write_loss_to_log(p_loss, 'rewards/p_loss')
+            self.write_loss_to_log(v_loss, 'rewards/v_loss')
+
+    def soft_update(self, local_model, target_model, tau=TAU):
+        """Soft update model parameters.
+        θ_target = τ*θ_local + (1 - τ)*θ_target
+
+        Params
+        ======
+            local_model (PyTorch model): weights will be copied from
+            target_model (PyTorch model): weights will be copied to
+            tau (float): interpolation parameter 
+        """
+        for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
+            target_param.data.copy_(
+                tau*local_param.data + (1.0-tau)*target_param.data)
 
     def step(self, states, actions, rewards, next_states, dones):
         for i in range(states.shape[0]):
