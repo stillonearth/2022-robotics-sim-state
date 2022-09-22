@@ -9,14 +9,14 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 1e-4
+LR = 3e-4
 GAMMA = 0.99
 BATCH_SIZE = 1024
 BUFFER_SIZE = int(1e6)
 ALPHA = 0.01
-TAU = 0.05
+TAU = 0.005
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 1
+GRADIENT_STEPS = 2
 
 
 class Agent():
@@ -39,7 +39,8 @@ class Agent():
             state_size=state_size, action_size=action_size).to(device)
         self.q_2 = critic(
             state_size=state_size, action_size=action_size).to(device)
-        self.q_optimizer = optim.Adam(self.q_1.parameters(), lr=LR)
+        self.q_optimizer_1 = optim.Adam(self.q_1.parameters(), lr=LR)
+        self.q_optimizer_2 = optim.Adam(self.q_2.parameters(), lr=LR)
 
         # Initialize Replay Memory
         self.memory = ReplayBuffer(
@@ -82,9 +83,9 @@ class Agent():
 
             # Update Q-functions
             q_loss_1 = (self.q_1(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_1, self.q_optimizer)
+            self.optimize_loss(q_loss_1, self.q_optimizer_1)
             q_loss_2 = (self.q_2(states, actions) - y_q).pow(2).mean()
-            self.optimize_loss(q_loss_2, self.q_optimizer)
+            self.optimize_loss(q_loss_2, self.q_optimizer_2)
 
             # Update Policy-function
             p_actions, p_log_probs = self.sample_action(states)
