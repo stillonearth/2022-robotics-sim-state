@@ -61,7 +61,6 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
         observation_space = Box(low=-np.inf, high=np.inf,
                                 shape=(obs_shape,), dtype=np.float64)
-        self.desired_goal = np.ones((obs_shape,))
 
         MujocoEnv.__init__(
             self, xml_path, 5, observation_space=observation_space, **kwargs
@@ -300,11 +299,6 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             task={},
             **kwargs
     ):
-        self._task = task
-        self._goal_dir = task.get('direction', 1)
-        self._goal_orientation = task.get('orienation', 1)
-        self._action_scaling = None
-
         super().__init__(
             ctrl_cost_weight,
             use_contact_forces,
@@ -316,6 +310,27 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             reset_noise_scale,
             exclude_current_positions_from_observation,
             ** kwargs,
+        )
+
+        self._task = task
+        self._goal_dir = task.get('direction', 1)
+        self._goal_orientation = task.get('orienation', 1)
+        self._action_scaling = None
+
+        obs_shape = 35
+        if not exclude_current_positions_from_observation:
+            obs_shape += 2
+        if use_contact_forces:
+            obs_shape += 84
+
+        obs_shape += 1  # goal direction
+
+        observation_space = Box(low=-np.inf, high=np.inf,
+                                shape=(obs_shape,), dtype=np.float64)
+
+        xml_path = os.path.abspath("./mujoco_menagerie/unitree_a1/scene.xml")
+        MujocoEnv.__init__(
+            self, xml_path, 5, observation_space=observation_space, **kwargs
         )
 
     def step(self, action):
@@ -330,10 +345,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         goal = np.array([np.cos(self._goal_dir), np.sin(self._goal_dir)])
         projection = np.dot(xy_velocity, goal *
                             abs_velocity) / np.linalg.norm(goal)
-        projection_norm = projection.norm()
-        colinear = int((goal - projection_norm).norm() == 0)
 
-        forward_reward = projection.norm() * (-1**(1 - colinear))
+        forward_reward = projection * 10.0
         healthy_reward = self.healthy_reward
 
         rewards = forward_reward + healthy_reward
@@ -362,6 +375,10 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         self.renderer.render_step()
         return observation, reward, terminated, False, info
+
+    def _get_obs(self):
+        model_obs = super()._get_obs()
+        return np.concatenate([model_obs, [self._goal_dir]])
 
     def sample_tasks(self, num_tasks):
         directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
