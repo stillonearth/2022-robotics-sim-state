@@ -9,14 +9,14 @@ from collections import namedtuple, deque
 from torch.utils.tensorboard import SummaryWriter
 
 
-LR = 3e-3
+LR = 1e-4
 GAMMA = 0.99
-BATCH_SIZE = 512
+BATCH_SIZE = 1024
 BUFFER_SIZE = int(1e6)
 ALPHA = 0.2
 TAU = 0.005
 TARGET_UPDATE_INTERVAL = 1
-GRADIENT_STEPS = 1
+GRADIENT_STEPS = 2
 
 
 class Agent():
