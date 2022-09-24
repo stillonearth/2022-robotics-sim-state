@@ -5,6 +5,7 @@ from gym.envs.mujoco import MujocoEnv
 from gym.spaces import Box, Dict
 
 import os
+import mujoco
 
 DEFAULT_CAMERA_CONFIG = {
     "distance": 4.0,
@@ -30,7 +31,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         contact_cost_weight=5e-4,
         healthy_reward=1.0,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.1, 1.0),
+        healthy_z_range=(0.12, 1.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
@@ -316,6 +317,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         self._goal_dir = task.get('direction', 1)
         self._goal_orientation = task.get('orienation', 1)
         self._action_scaling = None
+        self.world_quat = np.array([1.0, 0.0, 0.0, 0.0])
+        self.base_vec = np.array([0.0, 0.0, 1.0])
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
@@ -333,6 +336,20 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             self, xml_path, 5, observation_space=observation_space, **kwargs
         )
 
+    def _get_body_orientation(self, body_name: str):
+        now_quat = self.data.body(body_name).xquat
+
+        res = np.zeros(4)
+        mujoco.mju_mulQuat(res, self.world_quat, now_quat)
+        if res[0] < 0:
+            res = res * -1
+
+        world_vec = np.zeros(3)
+        mujoco.mju_rotVecQuat(world_vec, self.base_vec, now_quat)
+
+        self.world_quat = res
+        return world_vec
+
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
         self.do_simulation(action, self.frame_skip)
@@ -342,14 +359,22 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         x_velocity, y_velocity = xy_velocity
         abs_velocity = np.linalg.norm(xy_velocity)
 
-        goal = np.array([np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projection = np.dot(xy_velocity, goal *
-                            abs_velocity) / np.linalg.norm(goal)
+        goal_direction = np.array(
+            [np.cos(self._goal_dir), np.sin(self._goal_dir)])
+        projected_speed = np.dot(xy_velocity, goal_direction *
+                                 abs_velocity) / np.linalg.norm(goal_direction)
 
-        forward_reward = projection * 10.0
+        body_orientation = self._get_body_orientation("trunk")
+        goal_orientation = np.array(
+            [np.cos(self._goal_dir), np.sin(self._goal_dir)])
+        goal_orientation = np.dot(
+            body_orientation[:2], goal_orientation) / np.linalg.norm(goal_orientation)
+
+        forward_reward = projected_speed
         healthy_reward = self.healthy_reward
+        orientation_reward = goal_orientation
 
-        rewards = forward_reward + healthy_reward
+        rewards = forward_reward + healthy_reward + orientation_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -357,6 +382,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         observation = self._get_obs()
         info = {
             "reward_forward": forward_reward,
+            "reward_orientation": orientation_reward,
             "reward_ctrl": -ctrl_cost,
             "reward_survive": healthy_reward,
             "x_position": xy_position_after[0],
@@ -382,10 +408,11 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
     def sample_tasks(self, num_tasks):
         directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
+        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
         return [{
-            'direction': direction,
-            'orienation': 0,
-        } for direction in directions]
+            'direction': d,
+            'orienation': o,
+        } for (d, o) in zip(directions, orientations)]
 
     def meta_params(self):
         return np.array([self._goal_dir, self._goal_orientation])
