@@ -293,7 +293,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             contact_cost_weight=5e-4,
             healthy_reward=1.0,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.1, 1.0),
+            healthy_z_range=(0.12, 1.0),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
@@ -326,7 +326,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         if use_contact_forces:
             obs_shape += 84
 
-        obs_shape += 1  # goal direction
+        obs_shape += 2  # goal direction
 
         observation_space = Box(low=-np.inf, high=np.inf,
                                 shape=(obs_shape,), dtype=np.float64)
@@ -370,7 +370,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         goal_orientation = np.dot(
             body_orientation[:2], goal_orientation) / np.linalg.norm(goal_orientation)
 
-        forward_reward = projected_speed
+        forward_reward = projected_speed/abs_velocity
         healthy_reward = self.healthy_reward
         orientation_reward = goal_orientation
 
@@ -402,9 +402,14 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         self.renderer.render_step()
         return observation, reward, terminated, False, info
 
+    def reset_model(self):
+        task = self.sample_tasks(1)[0]
+        self.reset_task(task)
+        return super().reset_model()
+
     def _get_obs(self):
         model_obs = super()._get_obs()
-        return np.concatenate([model_obs, [self._goal_dir]])
+        return np.concatenate([model_obs, [self._goal_dir, self._goal_orientation]])
 
     def sample_tasks(self, num_tasks):
         directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
