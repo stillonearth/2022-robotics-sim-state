@@ -293,7 +293,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             contact_cost_weight=5e-4,
             healthy_reward=1.0,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.1, 0.5),
+            healthy_z_range=(0.05, 0.43*1.2),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
@@ -368,18 +368,17 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         goal_direction = np.array(
             [np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = np.dot(xy_velocity, goal_direction *
-                                 abs_velocity) / np.linalg.norm(goal_direction)
+        projected_speed = np.dot(xy_velocity / abs_velocity, goal_direction) / np.linalg.norm(goal_direction)
 
         body_orientation = self._get_body_orientation("trunk")
         goal_orientation = np.array(
-            [np.cos(self._goal_dir), np.sin(self._goal_dir)])
+            [np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
         goal_orientation = np.dot(
             body_orientation[:2], goal_orientation) / np.linalg.norm(goal_orientation)
 
-        forward_reward = projected_speed/abs_velocity
+        forward_reward = 10 * projected_speed
         healthy_reward = self.healthy_reward
-        orientation_reward = goal_orientation
+        orientation_reward = 10 * goal_orientation
 
         rewards = forward_reward + healthy_reward + orientation_reward
 
