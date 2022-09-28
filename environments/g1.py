@@ -271,12 +271,12 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
     def __init__(
         self,
-            ctrl_cost_weight=0.7,
+            ctrl_cost_weight=0.5,
             use_contact_forces=True,
             contact_cost_weight=5e-4,
             healthy_reward=1.0,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.1, 0.43*1.2),
+            healthy_z_range=(0.1, 10.0),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
@@ -332,13 +332,6 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         self.world_quat = res
         return world_vec
-    
-    @property
-    def is_healthy(self):
-        is_healthy = super().is_healthy
-        body_orientation = self._get_body_orientation("trunk")
-        
-        return is_healthy and body_orientation[2] > 0
 
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
@@ -359,18 +352,18 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         goal_orientation = np.dot(
             body_orientation[:2], goal_orientation) / np.linalg.norm(goal_orientation)
 
-        forward_reward = projected_speed
+        speed_reward = np.max([1.0, 1/np.abs(self._goal_velocity - projected_speed)])
         healthy_reward = self.healthy_reward
         orientation_reward = goal_orientation
 
-        rewards = healthy_reward + orientation_reward + body_orientation[2]
+        rewards = healthy_reward + orientation_reward + speed_reward*0
 
         costs = ctrl_cost = self.control_cost(action)
 
         terminated = self.terminated
         observation = self._get_obs()
         info = {
-            "reward_forward": forward_reward,
+            "speed_reward": speed_reward,
             "reward_orientation": orientation_reward,
             "reward_ctrl": -ctrl_cost,
             "reward_survive": healthy_reward,
@@ -400,17 +393,20 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         return np.concatenate([model_obs, [self._goal_dir, self._goal_orientation]])
 
     def sample_tasks(self, num_tasks):
-        directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
-        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
+        directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,)) * 0 + 1
+        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,)) 
+        velocities = np.random.uniform(0, 2.0, size=(num_tasks,)) * 0
         return [{
             'direction': d,
             'orientation': o,
-        } for (d, o) in zip(directions, orientations)]
+            'velocity': v,
+        } for (d, o, v) in zip(directions, orientations, velocities)]
 
     def control_params(self):
         return np.array([self._goal_dir, self._goal_orientation])
 
     def reset_task(self, task):
         self._task = task
-        self._goal_dir = 0 #task['direction']
+        self._goal_dir = task['direction']
         self._goal_orientation = task['orientation']
+        self._goal_velocity = task['velocity']
