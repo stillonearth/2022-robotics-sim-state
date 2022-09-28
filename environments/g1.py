@@ -302,6 +302,11 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         self._action_scaling = None
         self.world_quat = np.array([1.0, 0.0, 0.0, 0.0])
         self.base_vec = np.array([0.0, 0.0, 1.0])
+        self.y_rot = np.array([
+            [1.,  0.,  0.],
+            [0.,  0.,  1.],
+            [0., -1.,  0.]]
+        )
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
@@ -344,19 +349,25 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         goal_direction = np.array(
             [np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = np.dot(xy_velocity / abs_velocity, goal_direction) / np.linalg.norm(goal_direction)
+        projected_speed = np.dot(
+            xy_velocity / abs_velocity, goal_direction) / np.linalg.norm(goal_direction)
 
         body_orientation = self._get_body_orientation("trunk")
+        body_orientation = np.dot(self.y_rot, body_orientation)[:2]
+        body_orientation /= np.linalg.norm(body_orientation)
         goal_orientation = np.array(
             [np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
         goal_orientation = np.dot(
-            body_orientation[:2], goal_orientation) / np.linalg.norm(goal_orientation)
+            body_orientation, goal_orientation) / np.linalg.norm(goal_orientation)
 
-        speed_reward = np.max([1.0, 1/np.abs(self._goal_velocity - projected_speed)])
+        speed_reward = np.max(
+            [1.0, 1/np.abs(self._goal_velocity - projected_speed)])
         healthy_reward = self.healthy_reward
         orientation_reward = goal_orientation
 
-        rewards = healthy_reward + orientation_reward + speed_reward*0
+        print(orientation_reward)
+
+        rewards = healthy_reward + orientation_reward + speed_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -393,9 +404,9 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         return np.concatenate([model_obs, [self._goal_dir, self._goal_orientation]])
 
     def sample_tasks(self, num_tasks):
-        directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,)) * 0 + 1
-        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,)) 
-        velocities = np.random.uniform(0, 2.0, size=(num_tasks,)) * 0
+        directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
+        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
+        velocities = np.random.uniform(0, 2.0, size=(num_tasks,))
         return [{
             'direction': d,
             'orientation': o,
