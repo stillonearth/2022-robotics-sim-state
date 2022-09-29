@@ -349,7 +349,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         goal_direction = np.array(
             [np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = np.dot(xy_velocity / abs_velocity, goal_direction) 
+        projected_speed = 10 * np.dot(xy_velocity / abs_velocity, goal_direction) 
 
         body_orientation = self._get_body_orientation("trunk")
         body_orientation = np.dot(self.y_rot, body_orientation)[:2]
@@ -363,8 +363,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         healthy_reward = self.healthy_reward
         orientation_reward = goal_orientation
 
-        #rewards = healthy_reward + orientation_reward + speed_reward
-        rewards = orientation_reward + healthy_reward
+        rewards = healthy_reward + projected_speed
+#         rewards = orientation_reward + healthy_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -421,5 +421,5 @@ class G1GoalDistanceEnv(G1DistanceEnv):
     def reset_task(self, task):
         self._task = task
         self._goal_dir = task['direction']
-        self._goal_orientation = task['orientation']
-        self._goal_velocity = task['velocity']
+        self._goal_orientation = task['orientation'] * 0
+        self._goal_velocity = task['velocity'] * 0
