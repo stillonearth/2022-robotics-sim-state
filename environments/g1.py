@@ -274,12 +274,13 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             ctrl_cost_weight=0.5,
             use_contact_forces=True,
             contact_cost_weight=5e-4,
-            healthy_reward=0.1,
+            healthy_reward=1.0,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.1, 10.0),
+            healthy_z_range=(0.1, 0.5),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
+            mode='direction',
             task={},
             **kwargs
     ):
@@ -307,6 +308,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             [0.,  0.,  1.],
             [0., -1.,  0.]]
         )
+        self.mode = mode
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
@@ -314,7 +316,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         if use_contact_forces:
             obs_shape += 84
 
-        obs_shape += 4  # goal direction
+        obs_shape += 2
 
         observation_space = Box(low=-np.inf, high=np.inf,
                                 shape=(obs_shape,), dtype=np.float64)
@@ -362,9 +364,13 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             [1.0, 1/np.abs(self._goal_velocity - projected_speed)])
         healthy_reward = self.healthy_reward
         orientation_reward = goal_orientation
-
-        rewards = healthy_reward + projected_speed
-#         rewards = orientation_reward + healthy_reward
+        
+        if self.mode == 'direction':
+            rewards = healthy_reward + projected_speed
+        elif self.mode == 'orientation':
+             rewards = orientation_reward + healthy_reward
+        elif self.mode == 'direction+orientation':
+             rewards = orientation_reward + healthy_reward + projected_speed
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -400,8 +406,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         model_obs = super()._get_obs()
         return np.concatenate([
             model_obs, [
-                np.cos(self._goal_dir), np.sin(self._goal_dir), 
-                np.cos(self._goal_orientation), np.sin(self._goal_orientation)
+                self._goal_dir, 
+                self._goal_orientation,
             ]
         ])
 
@@ -415,11 +421,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             'velocity': v,
         } for (d, o, v) in zip(directions, orientations, velocities)]
 
-    def control_params(self):
-        return np.array([self._goal_dir, self._goal_orientation])
-
     def reset_task(self, task):
         self._task = task
         self._goal_dir = task['direction']
-        self._goal_orientation = task['orientation'] * 0
-        self._goal_velocity = task['velocity'] * 0
+        self._goal_orientation = task['orientation']
+        self._goal_velocity = task['velocity']
