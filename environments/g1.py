@@ -274,13 +274,14 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             ctrl_cost_weight=0.5,
             use_contact_forces=True,
             contact_cost_weight=5e-4,
-            healthy_reward=1.0,
+            healthy_reward=0.2,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.1, 0.5),
+            healthy_z_range=(0.15, 0.5),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
             mode='direction',
+            max_steps=500,
             task={},
             **kwargs
     ):
@@ -309,6 +310,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             [0., -1.,  0.]]
         )
         self.mode = mode
+        self.n_step = 0
+        self.max_steps = max_steps
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
@@ -351,24 +354,22 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         goal_direction = np.array(
             [np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = 10 * np.dot(xy_velocity / abs_velocity, goal_direction) 
+        projected_speed = 2 * np.dot(xy_velocity / abs_velocity, goal_direction) 
 
         body_orientation = self._get_body_orientation("trunk")
+        body_z_reward = body_orientation[2]
         body_orientation = np.dot(self.y_rot, body_orientation)[:2]
         body_orientation /= np.linalg.norm(body_orientation)
         goal_orientation = np.array(
             [np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
-        goal_orientation = np.dot(body_orientation, goal_orientation) 
+        orientation_reward = 2 * np.dot(body_orientation, goal_orientation) 
 
-        speed_reward = np.max(
-            [1.0, 1/np.abs(self._goal_velocity - projected_speed)])
         healthy_reward = self.healthy_reward
-        orientation_reward = goal_orientation
         
         if self.mode == 'direction':
-            rewards = healthy_reward + projected_speed
+            rewards = healthy_reward + projected_speed + body_z_reward
         elif self.mode == 'orientation':
-             rewards = orientation_reward + healthy_reward
+             rewards = orientation_reward + healthy_reward + body_z_reward
         elif self.mode == 'direction+orientation':
              rewards = orientation_reward + healthy_reward + projected_speed
 
@@ -377,7 +378,6 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         terminated = self.terminated
         observation = self._get_obs()
         info = {
-            "speed_reward": speed_reward,
             "reward_orientation": orientation_reward,
             "reward_ctrl": -ctrl_cost,
             "reward_survive": healthy_reward,
@@ -395,11 +395,13 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         reward = rewards - costs
 
         self.renderer.render_step()
+        self.n_step += 1
         return observation, reward, terminated, False, info
 
     def reset_model(self):
         task = self.sample_tasks(1)[0]
         self.reset_task(task)
+        self.n_step = 0
         return super().reset_model()
 
     def _get_obs(self):
@@ -410,6 +412,19 @@ class G1GoalDistanceEnv(G1DistanceEnv):
                 self._goal_orientation,
             ]
         ])
+    
+    @property
+    def is_healthy(self):
+        state = self.state_vector()
+        min_z, max_z = self._healthy_z_range
+        body_orientation_z = self._get_body_orientation('trunk')[2]
+        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z and body_orientation_z >= 0 
+        return is_healthy
+    
+    @property
+    def terminated(self):
+        terminated = super().terminated or (self.n_step > self.max_steps)
+        return terminated
 
     def sample_tasks(self, num_tasks):
         directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
