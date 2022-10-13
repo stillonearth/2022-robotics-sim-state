@@ -60,8 +60,9 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         if use_contact_forces:
             obs_shape += 84
 
-        observation_space = Box(low=-np.inf, high=np.inf,
-                                shape=(obs_shape,), dtype=np.float64)
+        observation_space = Box(
+            low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64
+        )
 
         MujocoEnv.__init__(
             self, xml_path, 5, observation_space=observation_space, **kwargs
@@ -165,10 +166,8 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         qpos = self.init_qpos + np.random.uniform(
             low=noise_low, high=noise_high, size=self.model.nq
         )
-        qvel = (
-            self.init_qvel
-            + self._reset_noise_scale *
-            np.random.standard_normal(self.model.nv)
+        qvel = self.init_qvel + self._reset_noise_scale * np.random.standard_normal(
+            self.model.nv
         )
         self.set_state(qpos, qvel)
         observation = self._get_obs()
@@ -183,19 +182,21 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
                 setattr(self.viewer.cam, key, value)
 
 
-class G1GoalDistanceEnv(G1DistanceEnv):
-
+class G1ControlEnv(G1DistanceEnv):
     def __init__(
         self,
         ctrl_cost_weight=0.1,
         use_contact_forces=True,
         contact_cost_weight=5e-4,
-        healthy_reward=1.0,
+        healthy_reward=0.5,
         terminate_when_unhealthy=True,
-        healthy_z_range=(0.1, 1.0),
+        healthy_z_range=(0.12, 1.0),
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
+        mode="direction",
+        max_steps=500,
+        task={},
         **kwargs
     ):
         super().__init__(
@@ -208,99 +209,12 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             contact_force_range,
             reset_noise_scale,
             exclude_current_positions_from_observation,
-            ** kwargs,
-        )
-
-        obs_shape = 35
-        if not exclude_current_positions_from_observation:
-            obs_shape += 4
-        if use_contact_forces:
-            obs_shape += 84
-
-        observation_space = Dict({
-            "observation": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
-            "achieved_goal": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
-            "desired_goal": Box(low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64),
-        })
-
-        self.desired_goal = np.ones((obs_shape,))
-
-        xml_path = os.path.abspath("./mujoco_menagerie/unitree_a1/scene.xml")
-        MujocoEnv.__init__(
-            self, xml_path, 5, observation_space=observation_space, **kwargs
-        )
-
-    def _get_obs(self):
-        position = self.data.qpos.flat.copy()
-        velocity = self.data.qvel.flat.copy()
-
-        if self._exclude_current_positions_from_observation:
-            position = position[2:]
-
-        observation = None
-        if self._use_contact_forces:
-            contact_force = self.contact_forces.flat.copy()
-            observation = np.concatenate((position, velocity, contact_force))
-        else:
-            observation = np.concatenate((position, velocity))
-
-        return {
-            "observation": observation.copy(),
-            "achieved_goal": observation.copy(),
-            "desired_goal": self.desired_goal,
-        }
-
-    def compute_reward(self, achieved_goal, desired_goal, _info):
-        distance = np.linalg.norm(achieved_goal - desired_goal, axis=-1)
-        return -(distance > 0).astype(np.float32)
-
-    def reset(self):
-        # Enforce that each G1DistanceEnv uses a Goal-compatible observation space.
-        if not isinstance(self.observation_space, Dict):
-            raise error.Error(
-                'G1DistanceEnv requires an observation space of type gym.spaces.Dict')
-        result = super(G1DistanceEnv, self).reset()
-        for key in ['observation', 'achieved_goal', 'desired_goal']:
-            if key not in result:
-                raise error.Error(
-                    'G1DistanceEnv requires the "{}" key to be part of the observation dictionary.'.format(key))
-        return result
-
-
-class G1GoalDistanceEnv(G1DistanceEnv):
-
-    def __init__(
-        self,
-            ctrl_cost_weight=0.1,
-            use_contact_forces=True,
-            contact_cost_weight=5e-4,
-            healthy_reward=0.5,
-            terminate_when_unhealthy=True,
-            healthy_z_range=(0.12, 1.0),
-            contact_force_range=(-1.0, 1.0),
-            reset_noise_scale=0.05,
-            exclude_current_positions_from_observation=True,
-            mode='direction',
-            max_steps=500,
-            task={},
-            **kwargs
-    ):
-        super().__init__(
-            ctrl_cost_weight,
-            use_contact_forces,
-            contact_cost_weight,
-            healthy_reward,
-            terminate_when_unhealthy,
-            healthy_z_range,
-            contact_force_range,
-            reset_noise_scale,
-            exclude_current_positions_from_observation,
-            ** kwargs,
+            **kwargs,
         )
 
         self._task = task
-        self._goal_dir = task.get('direction', 1)
-        self._goal_orientation = task.get('orientation', 1)
+        self._goal_dir = task.get("direction", 1)
+        self._goal_orientation = task.get("orientation", 1)
         self._action_scaling = None
         self.world_quat = np.array([1.0, 0.0, 0.0, 0.0])
         self.base_vec_z = np.array([0.0, 0.0, 1.0])
@@ -317,8 +231,9 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         obs_shape += 2
 
-        observation_space = Box(low=-np.inf, high=np.inf,
-                                shape=(obs_shape,), dtype=np.float64)
+        observation_space = Box(
+            low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64
+        )
 
         xml_path = os.path.abspath("./mujoco_menagerie/unitree_a1/scene.xml")
         MujocoEnv.__init__(
@@ -338,7 +253,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         self.world_quat = res
         return world_vec
-    
+
     def get_body_orientation_y(self):
         now_quat = self.data.body("trunk").xquat
 
@@ -362,28 +277,28 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         x_velocity, y_velocity = xy_velocity
         abs_velocity = np.linalg.norm(xy_velocity)
 
-        goal_direction = np.array(
-            [np.cos(self._goal_dir), np.sin(self._goal_dir)])
+        goal_direction = np.array([np.cos(self._goal_dir), np.sin(self._goal_dir)])
         goal_orientation = np.array(
-            [np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
-        
+            [np.cos(self._goal_orientation), np.sin(self._goal_orientation)]
+        )
+
         projected_speed = 10 * np.dot(xy_velocity, goal_direction)
 
-        body_z_reward = self.get_body_orientation_z()[2] / 5.
+        body_z_reward = self.get_body_orientation_z()[2] / 5.0
         body_orientation_xy = self.get_body_orientation_y()[:2]
         body_orientation_xy /= np.linalg.norm(body_orientation_xy)
 
-        projected_orientation = np.dot(body_orientation_xy, goal_orientation) 
+        projected_orientation = np.dot(body_orientation_xy, goal_orientation)
 
         healthy_reward = self.healthy_reward
-        
-        if self.mode == 'direction':
+
+        if self.mode == "direction":
             rewards = projected_speed
-        elif self.mode == 'orientation':
-             rewards = projected_orientation
-        elif self.mode == 'direction+orientation':
-             rewards = projected_speed + projected_orientation + abs_velocity
-                
+        elif self.mode == "orientation":
+            rewards = projected_orientation
+        elif self.mode == "direction+orientation":
+            rewards = projected_speed + projected_orientation + abs_velocity
+
         rewards += body_z_reward + healthy_reward
 
         costs = ctrl_cost = self.control_cost(action)
@@ -420,44 +335,54 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
     def _get_obs(self):
         model_obs = super()._get_obs()
-        return np.concatenate([
-            model_obs, [
-                self._goal_dir, 
-                self._goal_orientation,
+        return np.concatenate(
+            [
+                model_obs,
+                [
+                    self._goal_dir,
+                    self._goal_orientation,
+                ],
             ]
-        ])
-    
+        )
+
     @property
     def is_healthy(self):
         state = self.state_vector()
         min_z, max_z = self._healthy_z_range
         body_orientation_z = self.get_body_orientation_z()[2]
-        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z and body_orientation_z >= 0 
+        is_healthy = (
+            np.isfinite(state).all()
+            and min_z <= state[2] <= max_z
+            and body_orientation_z >= 0
+        )
         return is_healthy
-    
+
     @property
     def terminated(self):
         terminated = super().terminated or (self.n_step > self.max_steps)
         return terminated
 
     def sample_tasks(self, num_tasks):
-        directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
-        orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
+        directions = np.random.uniform(0, 2 * np.pi, size=(num_tasks,))
+        orientations = np.random.uniform(0, 2 * np.pi, size=(num_tasks,))
         velocities = np.random.uniform(0, 2.0, size=(num_tasks,))
-        
+
         if self.mode == "direction":
             orientations *= 0
-        elif self.mode == 'orientation':
+        elif self.mode == "orientation":
             directions *= 0
-        
-        return [{
-            'direction': d,
-            'orientation': o,
-            'velocity': v,
-        } for (d, o, v) in zip(directions, orientations, velocities)]
+
+        return [
+            {
+                "direction": d,
+                "orientation": o,
+                "velocity": v,
+            }
+            for (d, o, v) in zip(directions, orientations, velocities)
+        ]
 
     def reset_task(self, task):
         self._task = task
-        self._goal_dir = task['direction']
-        self._goal_orientation = task['orientation']
-        self._goal_velocity = task['velocity']
+        self._goal_dir = task["direction"]
+        self._goal_orientation = task["orientation"]
+        self._goal_velocity = task["velocity"]
