@@ -271,12 +271,12 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
     def __init__(
         self,
-            ctrl_cost_weight=0.5,
+            ctrl_cost_weight=0.1,
             use_contact_forces=True,
             contact_cost_weight=5e-4,
-            healthy_reward=0.2,
+            healthy_reward=0.5,
             terminate_when_unhealthy=True,
-            healthy_z_range=(0.07, 0.5),
+            healthy_z_range=(0.12, 1.0),
             contact_force_range=(-1.0, 1.0),
             reset_noise_scale=0.05,
             exclude_current_positions_from_observation=True,
@@ -303,12 +303,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         self._goal_orientation = task.get('orientation', 1)
         self._action_scaling = None
         self.world_quat = np.array([1.0, 0.0, 0.0, 0.0])
-        self.base_vec = np.array([0.0, 0.0, 1.0])
-        self.y_rot = np.array([
-            [1.,  0.,  0.],
-            [0.,  0.,  1.],
-            [0., -1.,  0.]]
-        )
+        self.base_vec_z = np.array([0.0, 0.0, 1.0])
+        self.base_vec_y = np.array([0.0, 1.0, 0.0])
         self.mode = mode
         self.n_step = 0
         self.max_steps = max_steps
@@ -329,8 +325,8 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             self, xml_path, 5, observation_space=observation_space, **kwargs
         )
 
-    def _get_body_orientation(self, body_name: str):
-        now_quat = self.data.body(body_name).xquat
+    def get_body_orientation_z(self):
+        now_quat = self.data.body("trunk").xquat
 
         res = np.zeros(4)
         mujoco.mju_mulQuat(res, self.world_quat, now_quat)
@@ -338,7 +334,21 @@ class G1GoalDistanceEnv(G1DistanceEnv):
             res = res * -1
 
         world_vec = np.zeros(3)
-        mujoco.mju_rotVecQuat(world_vec, self.base_vec, now_quat)
+        mujoco.mju_rotVecQuat(world_vec, self.base_vec_z, now_quat)
+
+        self.world_quat = res
+        return world_vec
+    
+    def get_body_orientation_y(self):
+        now_quat = self.data.body("trunk").xquat
+
+        res = np.zeros(4)
+        mujoco.mju_mulQuat(res, self.world_quat, now_quat)
+        if res[0] < 0:
+            res = res * -1
+
+        world_vec = np.zeros(3)
+        mujoco.mju_rotVecQuat(world_vec, self.base_vec_y, now_quat)
 
         self.world_quat = res
         return world_vec
@@ -354,31 +364,35 @@ class G1GoalDistanceEnv(G1DistanceEnv):
 
         goal_direction = np.array(
             [np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = 5 * np.dot(xy_velocity / abs_velocity, goal_direction) 
-
-        body_orientation = self._get_body_orientation("trunk")
-        body_z_reward = body_orientation[2] / 5
-        body_orientation = np.dot(self.y_rot, body_orientation)[:2]
-        body_orientation /= np.linalg.norm(body_orientation)
         goal_orientation = np.array(
             [np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
-        orientation_reward = 2 * np.dot(body_orientation, goal_orientation) 
+        
+        projected_speed = 10 * np.dot(xy_velocity, goal_direction)
+
+        body_z_reward = self.get_body_orientation_z()[2] / 5.
+        body_orientation_xy = self.get_body_orientation_y()[:2]
+        body_orientation_xy /= np.linalg.norm(body_orientation_xy)
+
+        projected_orientation = np.dot(body_orientation_xy, goal_orientation) 
 
         healthy_reward = self.healthy_reward
         
         if self.mode == 'direction':
-            rewards = healthy_reward + projected_speed + body_z_reward
+            rewards = projected_speed
         elif self.mode == 'orientation':
-             rewards = orientation_reward + healthy_reward + body_z_reward
+             rewards = projected_orientation
         elif self.mode == 'direction+orientation':
-             rewards = orientation_reward + healthy_reward + projected_speed
+             rewards = projected_speed + projected_orientation + abs_velocity
+                
+        rewards += body_z_reward + healthy_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
         terminated = self.terminated
         observation = self._get_obs()
         info = {
-            "reward_orientation": orientation_reward,
+            "reward_orientation": projected_orientation,
+            "reward_speed": projected_speed,
             "reward_ctrl": -ctrl_cost,
             "reward_survive": healthy_reward,
             "x_position": xy_position_after[0],
@@ -417,7 +431,7 @@ class G1GoalDistanceEnv(G1DistanceEnv):
     def is_healthy(self):
         state = self.state_vector()
         min_z, max_z = self._healthy_z_range
-        body_orientation_z = self._get_body_orientation('trunk')[2]
+        body_orientation_z = self.get_body_orientation_z()[2]
         is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z and body_orientation_z >= 0 
         return is_healthy
     
@@ -430,6 +444,12 @@ class G1GoalDistanceEnv(G1DistanceEnv):
         directions = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
         orientations = np.random.uniform(0, 2*np.pi, size=(num_tasks,))
         velocities = np.random.uniform(0, 2.0, size=(num_tasks,))
+        
+        if self.mode == "direction":
+            orientations *= 0
+        elif self.mode == 'orientation':
+            directions *= 0
+        
         return [{
             'direction': d,
             'orientation': o,
