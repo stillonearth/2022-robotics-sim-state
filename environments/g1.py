@@ -35,6 +35,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.05,
         exclude_current_positions_from_observation=True,
+        max_steps=500,
         **kwargs
     ):
         utils.EzPickle.__init__(**locals())
@@ -49,6 +50,8 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         self._contact_force_range = contact_force_range
         self._reset_noise_scale = reset_noise_scale
         self._use_contact_forces = use_contact_forces
+        self.max_steps = max_steps
+        self.n_step = 0
 
         self._exclude_current_positions_from_observation = (
             exclude_current_positions_from_observation
@@ -103,7 +106,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     @property
     def terminated(self):
         terminated = not self.is_healthy if self._terminate_when_unhealthy else False
-        return terminated
+        return terminated  or (self.n_step > self.max_steps)
 
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
@@ -141,6 +144,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         reward = rewards - costs
 
         self.renderer.render_step()
+        self.n_step += 1
         return observation, reward, terminated, False, info
 
     def _get_obs(self):
@@ -171,6 +175,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
         )
         self.set_state(qpos, qvel)
         observation = self._get_obs()
+        self.n_step = 0
         return observation
 
     def viewer_setup(self):
@@ -220,8 +225,7 @@ class G1ControlEnv(G1DistanceEnv):
         self.base_vec_z = np.array([0.0, 0.0, 1.0])
         self.base_vec_y = np.array([0.0, 1.0, 0.0])
         self.mode = mode
-        self.n_step = 0
-        self.max_steps = max_steps
+        
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
