@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 [SAC](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) implementation from stable_baselines3 was chosen to train a set of models.
 
-## REPTILE
+## Training with control tasks
 
 [REPTILE](https://d4mucfpksywv.cloudfront.net/research-covers/reptile/reptile_update.pdf) established a framework for meta-training an agent. The idea is to train a set of models on a set of tasks and then use the models to train a new model on a new task. The new model is trained by using the models trained on the old tasks as a starting point. This is done by using the gradient of the new task to update the old models. The new model is then trained by using the updated old models as a starting point. This process is repeated until the new model converges.
 
@@ -39,10 +39,33 @@ This environment also adds 2 control signals to robot's observations: velocity d
 
 ## Results
 
+Logs are included in `logs/sac` folder.
+
+- <span style="color:black">⬤</span> — G1 - Forward
+- <span style="color:lightblue">⬤</span> — G1Control - Direction
+- <span style="color:pink">⬤</span> — G1Control - Orientation
+- <span style="color:yellow">⬤</span> — G1Control - Direction+Orientation
+
+### Episode Length
+
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/graphs/ep_length.png?raw=true "Episode Length")
+
+### Episode Rewards
+
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/graphs/reward.png?raw=true "Reward")
+
 ### 1. Unitree Go-1 — Forward
+
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-forward.gif?raw=true "Reward")
 
 ### 2. Unitree Go-1 — Control — Direction
 
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-direction_8.gif?raw=true "Reward")
+
 ### 3. Unitree Go-1 — Control — Orientation
 
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-orientation_5.gif?raw=true "Reward")
+
 ### 4. Unitree Go-1 — Control — Direction+Orientation
+
+![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-direction+orientation_6.gif?raw=true "Reward")
