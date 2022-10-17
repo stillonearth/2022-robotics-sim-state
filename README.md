@@ -41,10 +41,10 @@ This environment also adds 2 control signals to robot's observations: velocity d
 
 Logs are included in `logs/sac` folder.
 
-- <span style="color:black">⬤</span> — G1 - Forward
-- <span style="color:lightblue">⬤</span> — G1Control - Direction
-- <span style="color:pink">⬤</span> — G1Control - Orientation
-- <span style="color:yellow">⬤</span> — G1Control - Direction+Orientation
+- BLACK — G1 - Forward
+- TEAL — G1Control - Direction
+- PINK — G1Control - Orientation
+- YELLOW — G1Control - Direction+Orientation
 
 ### Episode Length
 
