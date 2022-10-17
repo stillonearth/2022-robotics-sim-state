@@ -106,7 +106,7 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     @property
     def terminated(self):
         terminated = not self.is_healthy if self._terminate_when_unhealthy else False
-        return terminated  or (self.n_step > self.max_steps)
+        return terminated or (self.n_step > self.max_steps)
 
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
@@ -225,7 +225,6 @@ class G1ControlEnv(G1DistanceEnv):
         self.base_vec_z = np.array([0.0, 0.0, 1.0])
         self.base_vec_y = np.array([0.0, 1.0, 0.0])
         self.mode = mode
-        
 
         obs_shape = 35
         if not exclude_current_positions_from_observation:
@@ -244,8 +243,8 @@ class G1ControlEnv(G1DistanceEnv):
             self, xml_path, 5, observation_space=observation_space, **kwargs
         )
 
-    def get_body_orientation_z(self):
-        now_quat = self.data.body("trunk").xquat
+    def get_body_orientation(self, base_vec, name="trunk"):
+        now_quat = self.data.body(name).xquat
 
         res = np.zeros(4)
         mujoco.mju_mulQuat(res, self.world_quat, now_quat)
@@ -253,21 +252,7 @@ class G1ControlEnv(G1DistanceEnv):
             res = res * -1
 
         world_vec = np.zeros(3)
-        mujoco.mju_rotVecQuat(world_vec, self.base_vec_z, now_quat)
-
-        self.world_quat = res
-        return world_vec
-
-    def get_body_orientation_y(self):
-        now_quat = self.data.body("trunk").xquat
-
-        res = np.zeros(4)
-        mujoco.mju_mulQuat(res, self.world_quat, now_quat)
-        if res[0] < 0:
-            res = res * -1
-
-        world_vec = np.zeros(3)
-        mujoco.mju_rotVecQuat(world_vec, self.base_vec_y, now_quat)
+        mujoco.mju_rotVecQuat(world_vec, base_vec, now_quat)
 
         self.world_quat = res
         return world_vec
@@ -282,17 +267,18 @@ class G1ControlEnv(G1DistanceEnv):
         abs_velocity = np.linalg.norm(xy_velocity)
 
         goal_direction = np.array([np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        goal_orientation = np.array(
-            [np.cos(self._goal_orientation), np.sin(self._goal_orientation)]
-        )
-
         projected_speed = 10 * np.dot(xy_velocity, goal_direction)
 
-        body_z_reward = self.get_body_orientation_z()[2] / 5.0
-        body_orientation_xy = self.get_body_orientation_y()[:2]
-        body_orientation_xy /= np.linalg.norm(body_orientation_xy)
+        body_orientation = self.get_body_orientation(self.base_vec_z)
+        body_z_reward = body_orientation[2] / 5.0
 
-        projected_orientation = np.dot(body_orientation_xy, goal_orientation)
+        body_angle = np.arctan2(
+            self.get_body_orientation(self.base_vec_y)[0],
+            self.get_body_orientation(self.base_vec_y)[1],
+        )
+        projected_orientation = 10 * (
+            np.cos(np.abs(self._goal_orientation - body_angle))
+        )
 
         healthy_reward = self.healthy_reward
 
@@ -353,7 +339,7 @@ class G1ControlEnv(G1DistanceEnv):
     def is_healthy(self):
         state = self.state_vector()
         min_z, max_z = self._healthy_z_range
-        body_orientation_z = self.get_body_orientation_z()[2]
+        body_orientation_z = self.get_body_orientation(self.base_vec_z)[2]
         is_healthy = (
             np.isfinite(state).all()
             and min_z <= state[2] <= max_z
