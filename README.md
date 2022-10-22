@@ -41,31 +41,4 @@ This environment also adds 2 control signals to robot's observations: velocity d
 
 Logs are included in `logs/sac` folder.
 
-- BLACK — G1 - Forward
-- TEAL — G1Control - Direction
-- PINK — G1Control - Orientation
-- YELLOW — G1Control - Direction+Orientation
-
-### Episode Length
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/graphs/ep_length.png?raw=true "Episode Length")
-
-### Episode Rewards
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/graphs/reward.png?raw=true "Reward")
-
-### 1. Unitree Go-1 — Forward
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-forward.gif?raw=true "Reward")
-
-### 2. Unitree Go-1 — Control — Direction
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-direction_8.gif?raw=true "Reward")
-
-### 3. Unitree Go-1 — Control — Orientation
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-orientation_5.gif?raw=true "Reward")
-
-### 4. Unitree Go-1 — Control — Direction+Orientation
-
-![alt text](https://github.com/stillonearth/continuous_control-unitree-g1/blob/master/renders/g1-control-direction+orientation_6.gif?raw=true "Reward")
+<img width="888" alt="image" src="https://user-images.githubusercontent.com/97428129/197347891-41333a3e-f5e9-49a7-a6a7-067bdd5ccb69.png">
