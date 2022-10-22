@@ -41,4 +41,4 @@ This environment also adds 2 control signals to robot's observations: velocity d
 
 Logs are included in `logs/sac` folder.
 
-<img width="888" alt="image" src="https://user-images.githubusercontent.com/97428129/197347891-41333a3e-f5e9-49a7-a6a7-067bdd5ccb69.png">
+<img width="893" alt="image" src="https://user-images.githubusercontent.com/97428129/197347921-63289a14-1d3d-45cc-afc1-45731abb8247.png">
