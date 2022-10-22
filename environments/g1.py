@@ -14,6 +14,8 @@ DEFAULT_CAMERA_CONFIG = {
 
 
 class G1DistanceEnv(MujocoEnv, utils.EzPickle):
+    """This environment is derived from Ant-v4. The changes are helthy_z_range and xml paths."""
+    
     metadata = {
         "render_modes": [
             "human",
@@ -188,30 +190,19 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
                 setattr(self.viewer.cam, key, value)
 
 
-def euler_from_quaternion(x, y, z, w):
-    """
-    Convert a quaternion into euler angles (roll, pitch, yaw)
-    roll is rotation around x in radians (counterclockwise)
-    pitch is rotation around y in radians (counterclockwise)
-    yaw is rotation around z in radians (counterclockwise)
-    """
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    roll_x = math.atan2(t0, t1)
-
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = math.asin(t2)
-
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw_z = math.atan2(t3, t4)
-
-    return roll_x, pitch_y, yaw_z  # in radians
-
-
 class G1ControlEnv(G1DistanceEnv):
+    """Control singals are added to observations. 
+   
+    There are 3 modes for evaluation of control tasks:
+    1. direction — velocity direction
+    2. orientation — trunk orientation
+    3. direction+orientation — combined
+    
+    Contacts costs, healthy rewards are adjusted compared to a base environment.
+    Additional rewards are from euler x and y angles for keeping trunk straight.
+    Environment is limited to max_steps.
+    """
+    
     def __init__(
         self,
         ctrl_cost_weight=0.1,
@@ -247,7 +238,6 @@ class G1ControlEnv(G1DistanceEnv):
         self._action_scaling = None
         self.world_quat = np.array([1.0, 0.0, 0.0, 0.0])
         self.base_vec_z = np.array([0.0, 0.0, 1.0])
-        self.base_vec_x = np.array([1.0, 1.0, 0.0])
         self.mode = mode
 
         obs_shape = 35
@@ -267,11 +257,10 @@ class G1ControlEnv(G1DistanceEnv):
             self, xml_path, 5, observation_space=observation_space, **kwargs
         )
 
-    def rotation_angles(self, matrix, order):
+    def rotation_angles(self, matrix):
         """
         input
             matrix = 3x3 rotation matrix (numpy array)
-            oreder(str) = rotation order of x, y, z : e.g, rotation XZY -- 'xzy'
         output
             theta1, theta2, theta3 = rotation angles in rotation order
         """
@@ -279,71 +268,37 @@ class G1ControlEnv(G1DistanceEnv):
         r21, r22, r23 = matrix[1]
         r31, r32, r33 = matrix[2]
 
-        if order == "xzx":
-            theta1 = np.arctan(r31 / r21)
-            theta2 = np.arctan(r21 / (r11 * np.cos(theta1)))
-            theta3 = np.arctan(-r13 / r12)
-
-        elif order == "xyx":
-            theta1 = np.arctan(-r21 / r31)
-            theta2 = np.arctan(-r31 / (r11 * np.cos(theta1)))
-            theta3 = np.arctan(r12 / r13)
-
-        elif order == "yxy":
-            theta1 = np.arctan(r12 / r32)
-            theta2 = np.arctan(r32 / (r22 * np.cos(theta1)))
-            theta3 = np.arctan(-r21 / r23)
-
-        elif order == "yzy":
-            theta1 = np.arctan(-r32 / r12)
-            theta2 = np.arctan(-r12 / (r22 * np.cos(theta1)))
-            theta3 = np.arctan(r23 / r21)
-
-        elif order == "zyz":
-            theta1 = np.arctan(r23 / r13)
-            theta2 = np.arctan(r13 / (r33 * np.cos(theta1)))
-            theta3 = np.arctan(-r32 / r31)
-
-        elif order == "zxz":
-            theta1 = np.arctan(-r13 / r23)
-            theta2 = np.arctan(-r23 / (r33 * np.cos(theta1)))
-            theta3 = np.arctan(r31 / r32)
-
-        elif order == "xzy":
-            theta1 = np.arctan(r32 / r22)
-            theta2 = np.arctan(-r12 * np.cos(theta1) / r22)
-            theta3 = np.arctan(r13 / r11)
-
-        elif order == "xyz":
-            theta1 = np.arctan(-r23 / r33)
-            theta2 = np.arctan(r13 * np.cos(theta1) / r33)
-            theta3 = np.arctan(-r12 / r11)
-
-        elif order == "yxz":
-            theta1 = np.arctan(r13 / r33)
-            theta2 = np.arctan(-r23 * np.cos(theta1) / r33)
-            theta3 = np.arctan(r21 / r22)
-
-        elif order == "yzx":
-            theta1 = np.arctan(-r31 / r11)
-            theta2 = np.arctan(r21 * np.cos(theta1) / r11)
-            theta3 = np.arctan(-r23 / r22)
-
-        elif order == "zyx":
-            theta1 = np.arctan(r21 / r11)
-            theta2 = np.arctan(-r31 * np.cos(theta1) / r11)
-            theta3 = np.arctan(r32 / r33)
-
-        elif order == "zxy":
-            theta1 = np.arctan(-r12 / r22)
-            theta2 = np.arctan(r32 * np.cos(theta1) / r22)
-            theta3 = np.arctan(-r31 / r33)
+        theta1 = np.arctan(-r23 / r33)
+        theta2 = np.arctan(r13 * np.cos(theta1) / r33)
+        theta3 = np.arctan(-r12 / r11)
 
         return (theta1, theta2, theta3)
 
     def get_euler_angles(self, name="trunk"):
+        """Get trunk euler angles from a rotation matrix."""
+        
         now_pos_mat = np.array(self.data.body(name).xmat).reshape((3, 3))
-        return self.rotation_angles(now_pos_mat, "xyz")
+        return self.rotation_angles(now_pos_mat)
+    
+    def get_body_orientation_z(self, name="trunk"):
+        """
+        Get body orientation component from a quaternion. 
+        This can be extracted from euler angles as well. 
+        Z component is checked to detect falls/flips.
+        """
+        
+        now_quat = self.data.body(name).xquat
+
+        res = np.zeros(4)
+        mujoco.mju_mulQuat(res, self.world_quat, now_quat)
+        if res[0] < 0:
+            res = res * -1
+
+        world_vec = np.zeros(3)
+        mujoco.mju_rotVecQuat(world_vec, self.base_vec_z, now_quat)
+        
+        self.world_quat = res
+        return world_vec[2]
 
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
@@ -360,11 +315,12 @@ class G1ControlEnv(G1DistanceEnv):
         rot_x, rot_y, rot_z = self.get_euler_angles()
 
         goal_orientation = np.array([np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
-        orientation = np.array([np.cos(rot_z), np.sin(rot_z)])
+        orientation = np.array([np.cos(-rot_z), np.sin(-rot_z)])
         projected_orientation = 10 * np.dot(orientation, goal_orientation)
         trunk_orientation_reward = (np.cos(rot_x) / 2 + np.cos(rot_y) / 2) / 5
 
         healthy_reward = self.healthy_reward
+        trunk_height_reward = self.state_vector()[2]
 
         if self.mode == "direction":
             rewards = projected_speed
@@ -373,7 +329,7 @@ class G1ControlEnv(G1DistanceEnv):
         elif self.mode == "direction+orientation":
             rewards = projected_speed + projected_orientation + abs_velocity
 
-        rewards += trunk_orientation_reward + healthy_reward
+        rewards += trunk_orientation_reward + healthy_reward + trunk_height_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -424,11 +380,11 @@ class G1ControlEnv(G1DistanceEnv):
         state = self.state_vector()
         min_z, max_z = self._healthy_z_range
         rot_x, rot_y, rot_z = self.get_euler_angles()
+        body_z = self.get_body_orientation_z()
         is_healthy = (
             np.isfinite(state).all()
             and min_z <= state[2] <= max_z
-            and rot_x <= np.pi / 2
-            and rot_y <= np.pi / 2
+            and body_z >= 0
         )
         return is_healthy
 
@@ -438,9 +394,8 @@ class G1ControlEnv(G1DistanceEnv):
         return terminated
 
     def sample_tasks(self, num_tasks):
-        directions = np.random.uniform(0, 2 * np.pi, size=(num_tasks,))
-        orientations = np.random.uniform(0, 2 * np.pi, size=(num_tasks,))
-        velocities = np.random.uniform(0, 2.0, size=(num_tasks,))
+        directions = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
+        orientations = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
 
         if self.mode == "direction":
             orientations *= 0
@@ -451,13 +406,11 @@ class G1ControlEnv(G1DistanceEnv):
             {
                 "direction": d,
                 "orientation": o,
-                "velocity": v,
             }
-            for (d, o, v) in zip(directions, orientations, velocities)
+            for (d, o) in zip(directions, orientations)
         ]
 
     def reset_task(self, task):
         self._task = task
         self._goal_dir = task["direction"]
         self._goal_orientation = task["orientation"]
-        self._goal_velocity = task["velocity"]
