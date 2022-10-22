@@ -395,7 +395,7 @@ class G1ControlEnv(G1DistanceEnv):
 
     def sample_tasks(self, num_tasks):
         directions = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
-        orientations = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
+        orientations = np.random.uniform(-np.pi/2, np.pi/2, size=(num_tasks,))
 
         if self.mode == "direction":
             orientations *= 0
