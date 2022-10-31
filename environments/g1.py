@@ -15,7 +15,7 @@ DEFAULT_CAMERA_CONFIG = {
 
 class G1DistanceEnv(MujocoEnv, utils.EzPickle):
     """This environment is derived from Ant-v4. The changes are helthy_z_range and xml paths."""
-    
+
     metadata = {
         "render_modes": [
             "human",
@@ -191,23 +191,23 @@ class G1DistanceEnv(MujocoEnv, utils.EzPickle):
 
 
 class G1ControlEnv(G1DistanceEnv):
-    """Control singals are added to observations. 
-   
+    """Control singals are added to observations.
+
     There are 3 modes for evaluation of control tasks:
     1. direction — velocity direction
     2. orientation — trunk orientation
     3. direction+orientation — combined
-    
+
     Contacts costs, healthy rewards are adjusted compared to a base environment.
     Additional rewards are from euler x and y angles for keeping trunk straight.
     Environment is limited to max_steps.
     """
-    
+
     def __init__(
         self,
         ctrl_cost_weight=0.1,
         use_contact_forces=True,
-        contact_cost_weight=5e-3,
+        contact_cost_weight=5e-2,
         healthy_reward=0.2,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.12, 1.0),
@@ -229,6 +229,7 @@ class G1ControlEnv(G1DistanceEnv):
             contact_force_range,
             reset_noise_scale,
             exclude_current_positions_from_observation,
+            max_steps,
             **kwargs,
         )
 
@@ -265,28 +266,28 @@ class G1ControlEnv(G1DistanceEnv):
             theta1, theta2, theta3 = rotation angles in rotation order
         """
         r11, r12, r13 = matrix[0]
-        r21, r22, r23 = matrix[1]
-        r31, r32, r33 = matrix[2]
+        _, _, r23 = matrix[1]
+        _, _, r33 = matrix[2]
 
         theta1 = np.arctan(-r23 / r33)
         theta2 = np.arctan(r13 * np.cos(theta1) / r33)
         theta3 = np.arctan(-r12 / r11)
 
-        return (theta1, theta2, theta3)
+        return (theta1, theta2, -theta3)
 
     def get_euler_angles(self, name="trunk"):
         """Get trunk euler angles from a rotation matrix."""
-        
+
         now_pos_mat = np.array(self.data.body(name).xmat).reshape((3, 3))
         return self.rotation_angles(now_pos_mat)
-    
+
     def get_body_orientation_z(self, name="trunk"):
         """
-        Get body orientation component from a quaternion. 
-        This can be extracted from euler angles as well. 
+        Get body orientation component from a quaternion.
+        This can be extracted from euler angles as well.
         Z component is checked to detect falls/flips.
         """
-        
+
         now_quat = self.data.body(name).xquat
 
         res = np.zeros(4)
@@ -296,40 +297,43 @@ class G1ControlEnv(G1DistanceEnv):
 
         world_vec = np.zeros(3)
         mujoco.mju_rotVecQuat(world_vec, self.base_vec_z, now_quat)
-        
+
         self.world_quat = res
         return world_vec[2]
 
     def step(self, action):
         xy_position_before = self.get_body_com("trunk")[:2].copy()
+
         self.do_simulation(action, self.frame_skip)
         xy_position_after = self.get_body_com("trunk")[:2].copy()
 
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         x_velocity, y_velocity = xy_velocity
-        abs_velocity = np.linalg.norm(xy_velocity)
 
-        goal_direction = np.array([np.cos(self._goal_dir), np.sin(self._goal_dir)])
-        projected_speed = 10 * np.dot(xy_velocity, goal_direction)
+        goal_direction = np.array(
+            [
+                np.cos(self.task["direction"]),
+                np.sin(self.task["direction"]),
+            ]
+        )
+        projected_speed = np.dot(xy_velocity, goal_direction) / np.linalg.norm(xy_velocity) / np.linalg.norm(goal_direction)
 
         rot_x, rot_y, rot_z = self.get_euler_angles()
-
-        goal_orientation = np.array([np.cos(self._goal_orientation), np.sin(self._goal_orientation)])
-        orientation = np.array([np.cos(-rot_z), np.sin(-rot_z)])
-        projected_orientation = 10 * np.dot(orientation, goal_orientation)
+        projected_orientation = np.cos(
+            self.task["orientation"] - rot_z
+        )  
         trunk_orientation_reward = (np.cos(rot_x) / 2 + np.cos(rot_y) / 2) / 5
 
         healthy_reward = self.healthy_reward
-        trunk_height_reward = self.state_vector()[2]
 
         if self.mode == "direction":
             rewards = projected_speed
         elif self.mode == "orientation":
             rewards = projected_orientation
         elif self.mode == "direction+orientation":
-            rewards = projected_speed + projected_orientation + abs_velocity
+            rewards = projected_speed + projected_orientation
 
-        rewards += trunk_orientation_reward + healthy_reward + trunk_height_reward
+        rewards += trunk_orientation_reward + healthy_reward
 
         costs = ctrl_cost = self.control_cost(action)
 
@@ -345,6 +349,8 @@ class G1ControlEnv(G1DistanceEnv):
             "distance_from_origin": np.linalg.norm(xy_position_after, ord=2),
             "x_velocity": x_velocity,
             "y_velocity": y_velocity,
+            "trunk_orientation_reward": trunk_orientation_reward,
+            "projected_orientation": projected_orientation,
         }
         if self._use_contact_forces:
             contact_cost = self.contact_cost
@@ -369,8 +375,8 @@ class G1ControlEnv(G1DistanceEnv):
             [
                 model_obs,
                 [
-                    self._goal_dir,
-                    self._goal_orientation,
+                    self.task["orientation"],
+                    self.task["direction"],
                 ],
             ]
         )
@@ -379,12 +385,9 @@ class G1ControlEnv(G1DistanceEnv):
     def is_healthy(self):
         state = self.state_vector()
         min_z, max_z = self._healthy_z_range
-        rot_x, rot_y, rot_z = self.get_euler_angles()
         body_z = self.get_body_orientation_z()
         is_healthy = (
-            np.isfinite(state).all()
-            and min_z <= state[2] <= max_z
-            and body_z >= 0
+            np.isfinite(state).all() and min_z <= state[2] <= max_z and body_z >= 0
         )
         return is_healthy
 
@@ -411,6 +414,4 @@ class G1ControlEnv(G1DistanceEnv):
         ]
 
     def reset_task(self, task):
-        self._task = task
-        self._goal_dir = task["direction"]
-        self._goal_orientation = task["orientation"]
+        self.task = task
