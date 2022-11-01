@@ -53,9 +53,9 @@ Logs are included in `logs/sac` folder.
 
 ### Control — Orientation
 
-![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-orientation_1.avif")
+![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-orientation_1.avif)
 
 ### Control — Orientation + Direction
 
-![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif")
+![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif)
 
