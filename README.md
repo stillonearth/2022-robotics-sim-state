@@ -1,4 +1,4 @@
-# Continous Control with Deep Reinforcement Learning for Unitree Go-1 Quadruped Robot
+# Continous Control with Deep Reinforcement Learning for Unitree A1 Quadruped Robot
 
 The goal of this project is to evaluate training methods for synthesising a control system for quadruped robot.
 
@@ -12,7 +12,7 @@ Pull repository with submodules:
 
 ```bash
 git clone https://github.com/stillonearth/continuous_control-unitree-g1.git --depth 1
-cd continuous_control-unitree-g1
+cd continuous_control-unitree-a1
 git submodule update --init --recursive
 pip install -r requirements.txt
 ```
