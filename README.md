@@ -41,4 +41,19 @@ This environment also adds 2 control signals to robot's observations: velocity d
 
 Logs are included in `logs/sac` folder.
 
-<img width="893" alt="image" src="https://user-images.githubusercontent.com/97428129/197347921-63289a14-1d3d-45cc-afc1-45731abb8247.png">
+<img width="888" alt="image" src="https://user-images.githubusercontent.com/97428129/199161786-b1b1ac5c-5fc4-4e92-bc51-252ecf8c83b4.png">
+
+**Policies after 2M episodes**
+
+### Control — Direction
+
+<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction_2.avif">
+
+### Control — Orientation
+
+<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-orientation_1.avif">
+
+### Control — Orientation + Direction
+
+<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif">
+
