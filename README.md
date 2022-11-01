@@ -11,7 +11,7 @@ There has been a lot of research on model-free synthesized control. This project
 Pull repository with submodules:
 
 ```bash
-git clone https://github.com/stillonearth/continuous_control-unitree-g1.git
+git clone https://github.com/stillonearth/continuous_control-unitree-g1.git --depth 1
 cd continuous_control-unitree-g1
 git submodule update --init --recursive
 pip install -r requirements.txt
@@ -19,7 +19,9 @@ pip install -r requirements.txt
 
 ## Soft-Actor-Critic
 
-[SAC](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) implementation from stable_baselines3 was chosen to train a set of models.
+[Soft Actor-Critic](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) is model-free direct policy-optimization algorithm. It means it can be used in environment where no a-priori world and transition models are known, such as real world. Algorithm is sample-efficient because it accumulates (s,a,r,s') pairs in experience replay buffer. SAC mplementation from stable_baselines3 was used in this work.
+
+![image](https://user-images.githubusercontent.com/97428129/199162597-e0de3c74-11d9-4b0a-86fa-6bbdc500361e.png)
 
 ## Training with control tasks
 
@@ -47,13 +49,13 @@ Logs are included in `logs/sac` folder.
 
 ### Control — Direction
 
-<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction_2.avif">
+![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction_2.avif)
 
 ### Control — Orientation
 
-<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-orientation_1.avif">
+![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-orientation_1.avif")
 
 ### Control — Orientation + Direction
 
-<img src="https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif">
+![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif")
 
