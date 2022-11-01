@@ -11,7 +11,7 @@ There has been a lot of research on model-free synthesized control. This project
 Pull repository with submodules:
 
 ```bash
-git clone https://github.com/stillonearth/continuous_control-unitree-g1.git --depth 1
+git clone https://github.com/stillonearth/continuous_control-unitree-a1.git --depth 1
 cd continuous_control-unitree-a1
 git submodule update --init --recursive
 pip install -r requirements.txt
