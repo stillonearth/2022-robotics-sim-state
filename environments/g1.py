@@ -207,7 +207,7 @@ class G1ControlEnv(G1DistanceEnv):
         self,
         ctrl_cost_weight=0.1,
         use_contact_forces=True,
-        contact_cost_weight=5e-2,
+        contact_cost_weight=5e-3,
         healthy_reward=0.2,
         terminate_when_unhealthy=True,
         healthy_z_range=(0.12, 1.0),
@@ -316,7 +316,7 @@ class G1ControlEnv(G1DistanceEnv):
                 np.sin(self.task["direction"]),
             ]
         )
-        projected_speed = np.dot(xy_velocity, goal_direction) / np.linalg.norm(xy_velocity) / np.linalg.norm(goal_direction)
+        projected_speed = np.dot(xy_velocity, goal_direction) / np.linalg.norm(goal_direction)
 
         rot_x, rot_y, rot_z = self.get_euler_angles()
         projected_orientation = np.cos(
@@ -397,8 +397,8 @@ class G1ControlEnv(G1DistanceEnv):
         return terminated
 
     def sample_tasks(self, num_tasks):
-        directions = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
-        orientations = np.random.uniform(-np.pi, np.pi, size=(num_tasks,))
+        directions = np.random.uniform(-np.pi/2, np.pi/2, size=(num_tasks,))
+        orientations = np.random.uniform(-np.pi/2, np.pi/2, size=(num_tasks,))
 
         if self.mode == "direction":
             orientations *= 0
