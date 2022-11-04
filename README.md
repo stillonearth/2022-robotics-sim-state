@@ -57,5 +57,9 @@ Logs are included in `logs/sac` folder.
 
 ### Control — Orientation + Direction
 
+Trained for 25M  episodes:
+<img width="661" alt="image" src="https://user-images.githubusercontent.com/97428129/199981691-0cc7f82f-19f3-47a4-8e2b-f23e61ef8ce1.png">
+
+
 ![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif)
 
