@@ -61,3 +61,4 @@ Trained for 25M  episodes:
 
 ![image](https://raw.githubusercontent.com/stillonearth/continuous_control-unitree-g1/master/renders/g1-control-direction%2Borientation_2.avif)
 
+These are not state-of-the art results but can be used for futher iterating on performance of model.
