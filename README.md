@@ -19,21 +19,19 @@ pip install -r requirements.txt
 
 ## Soft-Actor-Critic
 
-[Soft Actor-Critic](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) is model-free direct policy-optimization algorithm. It means it can be used in environment where no a-priori world and transition models are known, such as real world. Algorithm is sample-efficient because it accumulates (s,a,r,s') pairs in experience replay buffer. SAC mplementation from stable_baselines3 was used in this work.
+[Soft Actor-Critic](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) is model-free direct policy-optimization algorithm. It means it can be used in environment where no a-priori world and transition models are known, such as real world. Algorithm is sample-efficient because it accumulates (s,a,r,s') pairs in experience replay buffer. SAC implementation from stable_baselines3 was used in this work.
 
 ![image](https://user-images.githubusercontent.com/97428129/199162597-e0de3c74-11d9-4b0a-86fa-6bbdc500361e.png)
 
 ## Training with control tasks
 
-[REPTILE](https://d4mucfpksywv.cloudfront.net/research-covers/reptile/reptile_update.pdf) established a framework for meta-training an agent. The idea is to train a set of models on a set of tasks and then use the models to train a new model on a new task. The new model is trained by using the models trained on the old tasks as a starting point. This is done by using the gradient of the new task to update the old models. The new model is then trained by using the updated old models as a starting point. This process is repeated until the new model converges.
-
-In this project each new rollout samples a new task with control signal is included into observation space and tries synthesize a single model that generalizes to all tasks.
+This differentiates from a previous goal as now control singal is supplied to a neural network. At each episode in training a random control task is sampled. This makes this algorithm similar to a meta-training approach such as [REPTILE](https://d4mucfpksywv.cloudfront.net/research-covers/reptile/reptile_update.pdf) This is done by using the gradient of the each new task to update the single model.
 
 ## Environments
 
 ### 1. Unitree Go-1 — Forward
 
-This environment closely follows [Ant-v4](https://github.com/openai/gym/blob/master/gym/envs/mujoco/ant_v4.py) from OpenAI Gym. The robot is rewarder for moving forward and keeping it's body within a certain range of z-positions.
+This environment closely follows [Ant-v4](https://github.com/openai/gym/blob/master/gym/envs/mujoco/ant_v4.py) from OpenAI Gym. The robot is rewarded for moving forward and keeping it's body within a certain range of z-positions.
 
 ### 2. Unitree Go-1 — Control
 
